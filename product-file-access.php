@@ -2,7 +2,7 @@
 /*
 Plugin Name: Product File Access
 Plugin URI: https://www.littlebizzy.com/plugins/product-file-access
-Description: Controls access to WooCommerce product files based on active subscription plans.
+Description: Provides subscription-based access to downloadable files using a shortcode.
 Version: 1.0.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
@@ -34,21 +34,6 @@ add_action('admin_menu', function() {
     );
 });
 
-// add custom CSS for wider input fields
-add_action('admin_head', function() {
-    if (isset($_GET['page']) && $_GET['page'] === 'product-file-access') {
-        echo '<style>
-            .pfa-settings-page .regular-text {
-                width: 100%;
-                max-width: 100%;
-            }
-            .pfa-settings-page th {
-                width: 20%;
-            }
-        </style>';
-    }
-});
-
 // settings page content
 function pfa_settings_page() {
     if (!current_user_can('manage_options')) {
@@ -57,90 +42,139 @@ function pfa_settings_page() {
 
     // save settings
     if (isset($_POST['pfa_save_settings'])) {
-        update_option('pfa_subscription_ids', sanitize_text_field($_POST['pfa_subscription_ids']));
-        update_option('pfa_message_not_logged_in', sanitize_text_field($_POST['pfa_message_not_logged_in']));
         update_option('pfa_message_no_subscription', sanitize_text_field($_POST['pfa_message_no_subscription']));
-        update_option('pfa_message_invalid_product', sanitize_text_field($_POST['pfa_message_invalid_product']));
-        update_option('pfa_message_not_downloadable', sanitize_text_field($_POST['pfa_message_not_downloadable']));
-        update_option('pfa_message_no_downloads', sanitize_text_field($_POST['pfa_message_no_downloads']));
+        update_option('pfa_message_invalid_url', sanitize_text_field($_POST['pfa_message_invalid_url']));
+        update_option('pfa_message_not_logged_in', sanitize_text_field($_POST['pfa_message_not_logged_in']));
+        update_option('pfa_message_no_sub_ids', sanitize_text_field($_POST['pfa_message_no_sub_ids']));
+        update_option('pfa_message_invalid_shortcode', sanitize_text_field($_POST['pfa_message_invalid_shortcode']));
+        update_option('pfa_default_subscription_ids', sanitize_text_field($_POST['pfa_default_subscription_ids']));
+        update_option('pfa_default_label', sanitize_text_field($_POST['pfa_default_label']));
         echo '<div class="updated"><p><strong>Settings saved successfully.</strong></p></div>';
     }
 
     // get current settings
-    $subscription_ids = get_option('pfa_subscription_ids', '');
-    $message_not_logged_in = get_option('pfa_message_not_logged_in', '<strong>Please log in to access this download.</strong>');
-    $message_no_subscription = get_option('pfa_message_no_subscription', '<strong>You need an active subscription to access this download.</strong>');
-    $message_invalid_product = get_option('pfa_message_invalid_product', '<strong>Invalid product.</strong>');
-    $message_not_downloadable = get_option('pfa_message_not_downloadable', '<strong>This product is not downloadable.</strong>');
-    $message_no_downloads = get_option('pfa_message_no_downloads', '<strong>No files available for this product.</strong>');
+    $message_no_subscription = get_option('pfa_message_no_subscription', '<strong>You need an active subscription to access this file.</strong>');
+    $message_invalid_url = get_option('pfa_message_invalid_url', '<strong>Invalid file URL provided.</strong>');
+    $message_not_logged_in = get_option('pfa_message_not_logged_in', '<strong>Please log in to access this file.</strong>');
+    $message_no_sub_ids = get_option('pfa_message_no_sub_ids', '<strong>No subscription IDs provided.</strong>');
+    $message_invalid_shortcode = get_option('pfa_message_invalid_shortcode', '<strong>The shortcode is missing required attributes.</strong>');
+    $default_subscription_ids = get_option('pfa_default_subscription_ids', '');
+    $default_label = get_option('pfa_default_label', 'Download File');
 
     // settings form
     ?>
-    <div class="wrap pfa-settings-page">
+    <div class="wrap">
         <h1>Product File Access Settings</h1>
+
+        <!-- Tabs Navigation -->
+        <h2 class="nav-tab-wrapper">
+            <a href="#error-messages" class="nav-tab nav-tab-active">Error Messages</a>
+            <a href="#woocommerce-settings" class="nav-tab">WooCommerce Settings</a>
+        </h2>
+
+        <!-- Tab Contents -->
         <form method="POST">
-            <table class="form-table">
-                <tr>
-                    <th scope="row">Acceptable Subscription IDs</th>
-                    <td><input type="text" name="pfa_subscription_ids" value="<?php echo esc_attr($subscription_ids); ?>" class="regular-text">
-                    <p class="description">Enter comma-separated subscription IDs (e.g., 101,102,103).</p></td>
-                </tr>
-                <tr>
-                    <th scope="row">Message: Not Logged In</th>
-                    <td><input type="text" name="pfa_message_not_logged_in" value="<?php echo esc_attr($message_not_logged_in); ?>" class="regular-text"></td>
-                </tr>
-                <tr>
-                    <th scope="row">Message: No Active Subscription</th>
-                    <td><input type="text" name="pfa_message_no_subscription" value="<?php echo esc_attr($message_no_subscription); ?>" class="regular-text"></td>
-                </tr>
-                <tr>
-                    <th scope="row">Message: Invalid Product</th>
-                    <td><input type="text" name="pfa_message_invalid_product" value="<?php echo esc_attr($message_invalid_product); ?>" class="regular-text"></td>
-                </tr>
-                <tr>
-                    <th scope="row">Message: Not Downloadable</th>
-                    <td><input type="text" name="pfa_message_not_downloadable" value="<?php echo esc_attr($message_not_downloadable); ?>" class="regular-text"></td>
-                </tr>
-                <tr>
-                    <th scope="row">Message: No Downloads Available</th>
-                    <td><input type="text" name="pfa_message_no_downloads" value="<?php echo esc_attr($message_no_downloads); ?>" class="regular-text"></td>
-                </tr>
-            </table>
+            <div id="error-messages" class="tab-content" style="display: block;">
+                <h3>Error Messages</h3>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">Message: No Active Subscription</th>
+                        <td><input type="text" name="pfa_message_no_subscription" value="<?php echo esc_attr($message_no_subscription); ?>" class="regular-text" style="width: 100%;"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Message: Invalid File URL</th>
+                        <td><input type="text" name="pfa_message_invalid_url" value="<?php echo esc_attr($message_invalid_url); ?>" class="regular-text" style="width: 100%;"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Message: Not Logged In</th>
+                        <td><input type="text" name="pfa_message_not_logged_in" value="<?php echo esc_attr($message_not_logged_in); ?>" class="regular-text" style="width: 100%;"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Message: No Subscription IDs Provided</th>
+                        <td><input type="text" name="pfa_message_no_sub_ids" value="<?php echo esc_attr($message_no_sub_ids); ?>" class="regular-text" style="width: 100%;"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Message: Invalid Shortcode</th>
+                        <td><input type="text" name="pfa_message_invalid_shortcode" value="<?php echo esc_attr($message_invalid_shortcode); ?>" class="regular-text" style="width: 100%;"></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div id="woocommerce-settings" class="tab-content" style="display: none;">
+                <h3>WooCommerce Settings</h3>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">Default Subscription IDs</th>
+                        <td><input type="text" name="pfa_default_subscription_ids" value="<?php echo esc_attr($default_subscription_ids); ?>" class="regular-text" style="width: 100%;">
+                        <p class="description">Enter comma-separated subscription IDs (e.g., 101,102,103). This will be used when no subscription IDs are specified in the shortcode.</p></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Default Label</th>
+                        <td><input type="text" name="pfa_default_label" value="<?php echo esc_attr($default_label); ?>" class="regular-text" style="width: 100%;">
+                        <p class="description">Enter the default label for the download button. This can be overridden using the shortcode <code>label</code> attribute.</p></td>
+                    </tr>
+                </table>
+            </div>
             <p class="submit">
-                <input type="submit" name="pfa_save_settings" id="submit" class="button button-primary" value="Save Changes">
+                <input type="submit" name="pfa_save_settings" class="button button-primary" value="Save Changes">
             </p>
         </form>
     </div>
+
+    <script>
+        // JavaScript to toggle tabs
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', function(event) {
+                event.preventDefault();
+                const targetTab = this.getAttribute('href');
+                document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('nav-tab-active'));
+                this.classList.add('nav-tab-active');
+                document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                document.querySelector(targetTab).style.display = 'block';
+            });
+        });
+    </script>
     <?php
 }
 
-// shortcode for product file access
-add_shortcode('product_file_access', function ($atts) {
-    // get settings
-    $subscription_ids = explode(',', get_option('pfa_subscription_ids', ''));
-    $message_not_logged_in = get_option('pfa_message_not_logged_in', '<strong>Please log in to access this download.</strong>');
-    $message_no_subscription = get_option('pfa_message_no_subscription', '<strong>You need an active subscription to access this download.</strong>');
-    $message_invalid_product = get_option('pfa_message_invalid_product', '<strong>Invalid product.</strong>');
-    $message_not_downloadable = get_option('pfa_message_not_downloadable', '<strong>This product is not downloadable.</strong>');
-    $message_no_downloads = get_option('pfa_message_no_downloads', '<strong>No files available for this product.</strong>');
+// shortcode for file access
+add_shortcode('file_access', function ($atts) {
+    // get default settings
+    $default_label = get_option('pfa_default_label', 'Download File');
+    $message_no_subscription = get_option('pfa_message_no_subscription', '<strong>You need an active subscription to access this file.</strong>');
 
-    // parse attributes
-    $atts = shortcode_atts(['product_id' => 0], $atts, 'product_file_access');
-    $product_id = intval($atts['product_id']);
+    // parse shortcode attributes
+    $atts = shortcode_atts([
+        'url' => '', // download URL
+        'label' => $default_label, // use default label if not provided
+        'subscriptions' => '', // comma-separated subscription IDs
+    ], $atts, 'file_access');
 
-    if (!$product_id) {
-        return "<p>{$message_invalid_product}</p>";
+    $url = esc_url($atts['url']);
+    $label = esc_html($atts['label']);
+    $subscriptions = array_filter(array_map('trim', explode(',', $atts['subscriptions'])));
+
+    if (empty($url)) {
+        return "<p>{$message_no_subscription}</p>";
     }
 
     if (!is_user_logged_in()) {
-        return "<p>{$message_not_logged_in}</p>";
+        return "<p>{$message_no_subscription}</p>";
+    }
+
+    if (empty($subscriptions)) {
+        $subscriptions = array_filter(array_map('trim', explode(',', get_option('pfa_default_subscription_ids', ''))));
+    }
+
+    if (empty($subscriptions)) {
+        return "<p>{$message_no_subscription}</p>";
     }
 
     $user_id = get_current_user_id();
     $has_access = false;
 
-    foreach ($subscription_ids as $subscription_id) {
-        if (wcs_user_has_subscription($user_id, trim($subscription_id), 'active')) {
+    foreach ($subscriptions as $subscription_id) {
+        if (wcs_user_has_subscription($user_id, $subscription_id, 'active')) {
             $has_access = true;
             break;
         }
@@ -150,23 +184,7 @@ add_shortcode('product_file_access', function ($atts) {
         return "<p>{$message_no_subscription}</p>";
     }
 
-    $product = wc_get_product($product_id);
-    if (!$product || !$product->is_downloadable()) {
-        return "<p>{$message_not_downloadable}</p>";
-    }
-
-    $downloads = $product->get_downloads();
-    if (empty($downloads)) {
-        return "<p>{$message_no_downloads}</p>";
-    }
-
-    $output = '<p><strong>Download your files:</strong></p><ul>';
-    foreach ($downloads as $download) {
-        $output .= sprintf('<li><a href="%s" target="_blank">%s</a></li>', esc_url($download['file']), esc_html($download['name']));
-    }
-    $output .= '</ul>';
-
-    return $output;
+    return sprintf('<p><a href="%s" target="_blank"><strong>%s</strong></a></p>', $url, $label);
 });
 
 // Ref: ChatGPT
