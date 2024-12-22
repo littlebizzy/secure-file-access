@@ -23,61 +23,146 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
     return $overrides;
 }, 999 );
 
-// shortcode to display a download link for a product if the user has an active subscription to specific plans
-add_shortcode('product_file_access', function ($atts) {
-    // parse attributes
-    $atts = shortcode_atts([
-        'product_id' => 0, // the product ID of the downloadable product
-    ], $atts, 'product_file_access');
+// register settings page
+add_action('admin_menu', function() {
+    add_options_page(
+        'Product File Access Settings',
+        'Product File Access',
+        'manage_options',
+        'product-file-access',
+        'pfa_settings_page'
+    );
+});
 
-    $product_id = intval($atts['product_id']);
-    if (!$product_id) {
-        return '<p>Invalid product ID.</p>'; // error if no product ID is provided
+// add custom CSS for wider input fields
+add_action('admin_head', function() {
+    if (isset($_GET['page']) && $_GET['page'] === 'product-file-access') {
+        echo '<style>
+            .pfa-settings-page .regular-text {
+                width: 100%;
+                max-width: 100%;
+            }
+            .pfa-settings-page th {
+                width: 20%;
+            }
+        </style>';
+    }
+});
+
+// settings page content
+function pfa_settings_page() {
+    if (!current_user_can('manage_options')) {
+        return;
     }
 
-    // define acceptable subscription plan IDs
-    $acceptable_subscription_ids = [101, 102, 103]; // replace with your WooCommerce Subscription IDs
+    // save settings
+    if (isset($_POST['pfa_save_settings'])) {
+        update_option('pfa_subscription_ids', sanitize_text_field($_POST['pfa_subscription_ids']));
+        update_option('pfa_message_not_logged_in', sanitize_text_field($_POST['pfa_message_not_logged_in']));
+        update_option('pfa_message_no_subscription', sanitize_text_field($_POST['pfa_message_no_subscription']));
+        update_option('pfa_message_invalid_product', sanitize_text_field($_POST['pfa_message_invalid_product']));
+        update_option('pfa_message_not_downloadable', sanitize_text_field($_POST['pfa_message_not_downloadable']));
+        update_option('pfa_message_no_downloads', sanitize_text_field($_POST['pfa_message_no_downloads']));
+        echo '<div class="updated"><p><strong>Settings saved successfully.</strong></p></div>';
+    }
 
-    // check if the user is logged in
+    // get current settings
+    $subscription_ids = get_option('pfa_subscription_ids', '');
+    $message_not_logged_in = get_option('pfa_message_not_logged_in', '<strong>Please log in to access this download.</strong>');
+    $message_no_subscription = get_option('pfa_message_no_subscription', '<strong>You need an active subscription to access this download.</strong>');
+    $message_invalid_product = get_option('pfa_message_invalid_product', '<strong>Invalid product.</strong>');
+    $message_not_downloadable = get_option('pfa_message_not_downloadable', '<strong>This product is not downloadable.</strong>');
+    $message_no_downloads = get_option('pfa_message_no_downloads', '<strong>No files available for this product.</strong>');
+
+    // settings form
+    ?>
+    <div class="wrap pfa-settings-page">
+        <h1>Product File Access Settings</h1>
+        <form method="POST">
+            <table class="form-table">
+                <tr>
+                    <th scope="row">Acceptable Subscription IDs</th>
+                    <td><input type="text" name="pfa_subscription_ids" value="<?php echo esc_attr($subscription_ids); ?>" class="regular-text">
+                    <p class="description">Enter comma-separated subscription IDs (e.g., 101,102,103).</p></td>
+                </tr>
+                <tr>
+                    <th scope="row">Message: Not Logged In</th>
+                    <td><input type="text" name="pfa_message_not_logged_in" value="<?php echo esc_attr($message_not_logged_in); ?>" class="regular-text"></td>
+                </tr>
+                <tr>
+                    <th scope="row">Message: No Active Subscription</th>
+                    <td><input type="text" name="pfa_message_no_subscription" value="<?php echo esc_attr($message_no_subscription); ?>" class="regular-text"></td>
+                </tr>
+                <tr>
+                    <th scope="row">Message: Invalid Product</th>
+                    <td><input type="text" name="pfa_message_invalid_product" value="<?php echo esc_attr($message_invalid_product); ?>" class="regular-text"></td>
+                </tr>
+                <tr>
+                    <th scope="row">Message: Not Downloadable</th>
+                    <td><input type="text" name="pfa_message_not_downloadable" value="<?php echo esc_attr($message_not_downloadable); ?>" class="regular-text"></td>
+                </tr>
+                <tr>
+                    <th scope="row">Message: No Downloads Available</th>
+                    <td><input type="text" name="pfa_message_no_downloads" value="<?php echo esc_attr($message_no_downloads); ?>" class="regular-text"></td>
+                </tr>
+            </table>
+            <p class="submit">
+                <input type="submit" name="pfa_save_settings" id="submit" class="button button-primary" value="Save Changes">
+            </p>
+        </form>
+    </div>
+    <?php
+}
+
+// shortcode for product file access
+add_shortcode('product_file_access', function ($atts) {
+    // get settings
+    $subscription_ids = explode(',', get_option('pfa_subscription_ids', ''));
+    $message_not_logged_in = get_option('pfa_message_not_logged_in', '<strong>Please log in to access this download.</strong>');
+    $message_no_subscription = get_option('pfa_message_no_subscription', '<strong>You need an active subscription to access this download.</strong>');
+    $message_invalid_product = get_option('pfa_message_invalid_product', '<strong>Invalid product.</strong>');
+    $message_not_downloadable = get_option('pfa_message_not_downloadable', '<strong>This product is not downloadable.</strong>');
+    $message_no_downloads = get_option('pfa_message_no_downloads', '<strong>No files available for this product.</strong>');
+
+    // parse attributes
+    $atts = shortcode_atts(['product_id' => 0], $atts, 'product_file_access');
+    $product_id = intval($atts['product_id']);
+
+    if (!$product_id) {
+        return "<p>{$message_invalid_product}</p>";
+    }
+
     if (!is_user_logged_in()) {
-        return '<p>Please log in to access the download.</p>';
+        return "<p>{$message_not_logged_in}</p>";
     }
 
     $user_id = get_current_user_id();
-
-    // check if the user has an active subscription to any of the acceptable plans
     $has_access = false;
-    foreach ($acceptable_subscription_ids as $subscription_id) {
-        if (wcs_user_has_subscription($user_id, $subscription_id, 'active')) {
+
+    foreach ($subscription_ids as $subscription_id) {
+        if (wcs_user_has_subscription($user_id, trim($subscription_id), 'active')) {
             $has_access = true;
             break;
         }
     }
 
     if (!$has_access) {
-        return '<p>You need an active subscription to one of our plans to access this download.</p>';
+        return "<p>{$message_no_subscription}</p>";
     }
 
-    // get the product
     $product = wc_get_product($product_id);
     if (!$product || !$product->is_downloadable()) {
-        return '<p>This product is not available for download.</p>';
+        return "<p>{$message_not_downloadable}</p>";
     }
 
-    // get download URLs
     $downloads = $product->get_downloads();
     if (empty($downloads)) {
-        return '<p>No downloads available for this product.</p>';
+        return "<p>{$message_no_downloads}</p>";
     }
 
-    // display download links
-    $output = '<p>Download your files:</p><ul>';
+    $output = '<p><strong>Download your files:</strong></p><ul>';
     foreach ($downloads as $download) {
-        $output .= sprintf(
-            '<li><a href="%s" target="_blank">%s</a></li>',
-            esc_url($download['file']),
-            esc_html($download['name'])
-        );
+        $output .= sprintf('<li><a href="%s" target="_blank">%s</a></li>', esc_url($download['file']), esc_html($download['name']));
     }
     $output .= '</ul>';
 
