@@ -2,7 +2,7 @@
 /*
 Plugin Name: Product File Access
 Plugin URI: https://www.littlebizzy.com/plugins/product-file-access
-Description: Provides subscription-based or product-based access to downloadable files using a shortcode.
+Description: Provides subscription-based or role-based access to downloadable files using a shortcode.
 Version: 1.0.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
@@ -41,10 +41,9 @@ function pfa_settings_page() {
     }
 
     if (isset($_POST['pfa_save_settings'])) {
-        update_option('pfa_message_no_subscription', sanitize_text_field($_POST['pfa_message_no_subscription']));
+        update_option('pfa_message_no_access', sanitize_text_field($_POST['pfa_message_no_access']));
         update_option('pfa_message_invalid_url', sanitize_text_field($_POST['pfa_message_invalid_url']));
         update_option('pfa_message_not_logged_in', sanitize_text_field($_POST['pfa_message_not_logged_in']));
-        update_option('pfa_message_no_sub_ids', sanitize_text_field($_POST['pfa_message_no_sub_ids']));
         update_option('pfa_message_invalid_shortcode', sanitize_text_field($_POST['pfa_message_invalid_shortcode']));
         update_option('pfa_default_subscription_ids', sanitize_text_field($_POST['pfa_default_subscription_ids']));
         update_option('pfa_default_roles', sanitize_text_field($_POST['pfa_default_roles']));
@@ -52,10 +51,9 @@ function pfa_settings_page() {
         echo '<div class="updated"><p><strong>Settings saved successfully.</strong></p></div>';
     }
 
-    $message_no_subscription = get_option('pfa_message_no_subscription', '<strong>You need an active subscription or a valid role to access this file.</strong>');
+    $message_no_access = get_option('pfa_message_no_access', '<strong>You do not have access to this file.</strong>');
     $message_invalid_url = get_option('pfa_message_invalid_url', '<strong>Invalid file URL provided.</strong>');
     $message_not_logged_in = get_option('pfa_message_not_logged_in', '<strong>Please log in to access this file.</strong>');
-    $message_no_sub_ids = get_option('pfa_message_no_sub_ids', '<strong>No subscription IDs provided.</strong>');
     $message_invalid_shortcode = get_option('pfa_message_invalid_shortcode', '<strong>The shortcode is missing required attributes.</strong>');
     $default_subscription_ids = get_option('pfa_default_subscription_ids', '');
     $default_roles = get_option('pfa_default_roles', 'administrator');
@@ -75,7 +73,7 @@ function pfa_settings_page() {
                 <table class="form-table">
                     <tr>
                         <th scope="row">Message: No Access</th>
-                        <td><input type="text" name="pfa_message_no_subscription" value="<?php echo esc_attr($message_no_subscription); ?>" class="regular-text" style="width: 100%;"></td>
+                        <td><input type="text" name="pfa_message_no_access" value="<?php echo esc_attr($message_no_access); ?>" class="regular-text" style="width: 100%;"></td>
                     </tr>
                     <tr>
                         <th scope="row">Message: Invalid File URL</th>
@@ -84,10 +82,6 @@ function pfa_settings_page() {
                     <tr>
                         <th scope="row">Message: Not Logged In</th>
                         <td><input type="text" name="pfa_message_not_logged_in" value="<?php echo esc_attr($message_not_logged_in); ?>" class="regular-text" style="width: 100%;"></td>
-                    </tr>
-                    <tr>
-                        <th scope="row">Message: No Subscription IDs Provided</th>
-                        <td><input type="text" name="pfa_message_no_sub_ids" value="<?php echo esc_attr($message_no_sub_ids); ?>" class="regular-text" style="width: 100%;"></td>
                     </tr>
                     <tr>
                         <th scope="row">Message: Invalid Shortcode</th>
@@ -102,17 +96,17 @@ function pfa_settings_page() {
                     <tr>
                         <th scope="row">Default Subscription IDs</th>
                         <td><input type="text" name="pfa_default_subscription_ids" value="<?php echo esc_attr($default_subscription_ids); ?>" class="regular-text" style="width: 100%;">
-                        <p class="description">Enter comma-separated subscription IDs (e.g., 101,102,103). Used when none are specified in the shortcode.</p></td>
+                        <p class="description">Comma-separated WooCommerce subscription product IDs.</p></td>
                     </tr>
                     <tr>
                         <th scope="row">Default Roles</th>
                         <td><input type="text" name="pfa_default_roles" value="<?php echo esc_attr($default_roles); ?>" class="regular-text" style="width: 100%;">
-                        <p class="description">Enter comma-separated WordPress roles (e.g., administrator,editor). Used when none are specified in the shortcode.</p></td>
+                        <p class="description">Comma-separated WordPress roles like administrator,editor.</p></td>
                     </tr>
                     <tr>
                         <th scope="row">Default Download Button Label</th>
                         <td><input type="text" name="pfa_default_label" value="<?php echo esc_attr($default_label); ?>" class="regular-text" style="width: 100%;">
-                        <p class="description">Default label for the download button. Can be overridden with the <code>label</code> attribute.</p></td>
+                        <p class="description">Can be overridden in the shortcode using <code>label</code>.</p></td>
                     </tr>
                 </table>
             </div>
@@ -140,12 +134,12 @@ function pfa_settings_page() {
 // shortcode for file access
 add_shortcode('file_access', function ($atts) {
     $default_label = get_option('pfa_default_label', 'Download File');
-    $default_subscription_ids = get_option('pfa_default_subscription_ids', '');
+    $default_sub_ids = get_option('pfa_default_subscription_ids', '');
     $default_roles = explode(',', get_option('pfa_default_roles', 'administrator'));
-    $message_no_subscription = get_option('pfa_message_no_subscription', '<strong>You need an active subscription or a valid role to access this file.</strong>');
+
+    $message_no_access = get_option('pfa_message_no_access', '<strong>You do not have access to this file.</strong>');
     $message_invalid_url = get_option('pfa_message_invalid_url', '<strong>Invalid file URL provided.</strong>');
     $message_not_logged_in = get_option('pfa_message_not_logged_in', '<strong>Please log in to access this file.</strong>');
-    $message_no_sub_ids = get_option('pfa_message_no_sub_ids', '<strong>No subscription IDs provided.</strong>');
     $message_invalid_shortcode = get_option('pfa_message_invalid_shortcode', '<strong>The shortcode is missing required attributes.</strong>');
 
     $atts = shortcode_atts([
@@ -156,6 +150,7 @@ add_shortcode('file_access', function ($atts) {
     ], $atts, 'file_access');
 
     $url = esc_url($atts['url']);
+    $label = esc_html($atts['label']);
     if (empty($url)) {
         return "<p>{$message_invalid_url}</p>";
     }
@@ -164,36 +159,34 @@ add_shortcode('file_access', function ($atts) {
         return "<p>{$message_not_logged_in}</p>";
     }
 
-    $label = esc_html($atts['label']);
-    $subscriptions = array_filter(array_map('trim', explode(',', $atts['subscriptions'] ?: $default_subscription_ids)));
-    $roles = array_filter(array_map('trim', explode(',', $atts['roles'] ?: implode(',', $default_roles))));
-
     $user_id = get_current_user_id();
     $user = wp_get_current_user();
+    $roles = array_filter(array_map('trim', explode(',', $atts['roles'] ?: implode(',', $default_roles))));
+    $subscriptions = array_filter(array_map('trim', explode(',', $atts['subscriptions'] ?: $default_sub_ids)));
 
-    $has_subscription = false;
-    if (function_exists('wcs_user_has_subscription')) {
+    $has_access = false;
+
+    foreach ($roles as $role) {
+        if (in_array($role, $user->roles, true)) {
+            $has_access = true;
+            break;
+        }
+    }
+
+    if (! $has_access && function_exists('wcs_user_has_subscription')) {
         foreach ($subscriptions as $sub_id) {
             if (wcs_user_has_subscription($user_id, $sub_id, 'active')) {
-                $has_subscription = true;
+                $has_access = true;
                 break;
             }
         }
     }
 
-    $has_role = false;
-    foreach ($roles as $role) {
-        if (in_array($role, $user->roles, true)) {
-            $has_role = true;
-            break;
-        }
-    }
-
-    if ($has_subscription || $has_role) {
+    if ($has_access) {
         return sprintf('<p><a href="%s" target="_blank" rel="noopener noreferrer"><strong>%s</strong></a></p>', esc_url($url), esc_html($label));
     }
 
-    return "<p>{$message_no_subscription}</p>";
+    return "<p>{$message_no_access}</p>";
 });
 
 // Ref: ChatGPT
