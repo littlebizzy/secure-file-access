@@ -24,29 +24,9 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
 	return $overrides;
 }, 999 );
 
-// load text domain and migrate old option keys if needed
+// load text domain
 add_action( 'plugins_loaded', function() {
 	load_plugin_textdomain( 'secure-file-access', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
-
-	// migrate pfa_* options to sfa_* once
-	$flag = get_option( 'sfa_migrated_from_pfa', '' );
-	if ( '' === $flag ) {
-		$map = [
-			'pfa_message_no_access'         => 'sfa_message_no_access',
-			'pfa_message_invalid_url'       => 'sfa_message_invalid_url',
-			'pfa_message_not_logged_in'     => 'sfa_message_not_logged_in',
-			'pfa_default_subscription_ids'  => 'sfa_default_subscription_ids',
-			'pfa_default_roles'             => 'sfa_default_roles',
-			'pfa_default_label'             => 'sfa_default_label',
-		];
-		foreach ( $map as $old => $new ) {
-			$val = get_option( $old, null );
-			if ( null !== $val && '' === get_option( $new, '' ) ) {
-				update_option( $new, $val );
-			}
-		}
-		update_option( 'sfa_migrated_from_pfa', '1' );
-	}
 } );
 
 // register settings page
