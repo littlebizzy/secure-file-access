@@ -220,13 +220,20 @@ add_shortcode( 'file_access', function( $atts ) {
     $user = wp_get_current_user();
 
     // compute rules
+    // split on commas only to avoid mid-word splits
     $roles = $atts['roles'] ? $atts['roles'] : implode( ',', $default_roles );
-    $roles = preg_split( '/[,\s]+/', $roles, -1, PREG_SPLIT_NO_EMPTY );
-    $roles = array_values( array_unique( array_map( 'sanitize_key', array_map( 'strtolower', array_map( 'trim', $roles ) ) ) ) );
+    $roles = explode( ',', $roles );
+    $roles = array_map( 'trim', $roles );
+    $roles = array_map( 'strtolower', $roles );
+    $roles = array_map( 'sanitize_key', $roles );
+    $roles = array_values( array_unique( array_filter( $roles ) ) );
 
+    // split on commas only and keep digits for ids
     $subscriptions = $atts['subscriptions'] ? $atts['subscriptions'] : $default_sub_ids;
-    $subscriptions = preg_split( '/[,\s]+/', $subscriptions, -1, PREG_SPLIT_NO_EMPTY );
-    $subscriptions = array_values( array_unique( array_filter( array_map( function( $v ) { return preg_replace( '/\D+/', '', $v ); }, $subscriptions ) ) ) );
+    $subscriptions = explode( ',', $subscriptions );
+    $subscriptions = array_map( 'trim', $subscriptions );
+    $subscriptions = array_map( function( $v ) { return preg_replace( '/\D+/', '', $v ); }, $subscriptions );
+    $subscriptions = array_values( array_unique( array_filter( $subscriptions ) ) );
 
     $has_access = false;
 
