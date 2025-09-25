@@ -29,6 +29,17 @@ add_action( 'plugins_loaded', function() {
 	load_plugin_textdomain( 'product-file-access', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 } );
 
+// register settings page
+add_action( 'admin_menu', function() {
+	add_options_page(
+		__( 'Product File Access Settings', 'product-file-access' ),
+		__( 'Product File Access', 'product-file-access' ),
+		'manage_options',
+		'product-file-access',
+		'pfa_settings_page'
+	);
+} );
+
 // settings page content
 function pfa_settings_page() {
 	// ensure capability
@@ -164,14 +175,13 @@ function pfa_settings_page() {
 
 // shortcode for file access
 add_shortcode( 'file_access', function( $atts ) {
-	$default_label = get_option( 'pfa_default_label', 'Download File' );
+	$default_label = get_option( 'pfa_default_label', __( 'Download File', 'product-file-access' ) );
 	$default_sub_ids = get_option( 'pfa_default_subscription_ids', '' );
 	$default_roles = explode( ',', get_option( 'pfa_default_roles', 'administrator' ) );
 
-	$message_no_access = get_option( 'pfa_message_no_access', '<strong>You do not have access to this file.</strong>' );
-	$message_invalid_url = get_option( 'pfa_message_invalid_url', '<strong>Invalid file URL provided.</strong>' );
-	$message_not_logged_in = get_option( 'pfa_message_not_logged_in', '<strong>Please log in to access this file.</strong>' );
-	$message_invalid_shortcode = get_option( 'pfa_message_invalid_shortcode', '<strong>The shortcode is missing required attributes.</strong>' );
+	$message_no_access = get_option( 'pfa_message_no_access', '<strong>' . __( 'You do not have access to this file.', 'product-file-access' ) . '</strong>' );
+	$message_invalid_url = get_option( 'pfa_message_invalid_url', '<strong>' . __( 'Invalid file URL provided.', 'product-file-access' ) . '</strong>' );
+	$message_not_logged_in = get_option( 'pfa_message_not_logged_in', '<strong>' . __( 'Please log in to access this file.', 'product-file-access' ) . '</strong>' );
 
 	$atts = shortcode_atts(
 		[
@@ -187,6 +197,7 @@ add_shortcode( 'file_access', function( $atts ) {
 	$url = esc_url( $atts['url'] );
 	$label = esc_html( $atts['label'] );
 
+	// minimal validation by design
 	if ( empty( $url ) ) {
 		return '<p>' . $message_invalid_url . '</p>';
 	}
@@ -197,18 +208,21 @@ add_shortcode( 'file_access', function( $atts ) {
 
 	$user_id = get_current_user_id();
 	$user = wp_get_current_user();
+
+	// resolve roles and subscriptions (merge shortcode or defaults)
 	$roles = array_filter( array_map( 'trim', explode( ',', $atts['roles'] ?: implode( ',', $default_roles ) ) ) );
 	$subscriptions = array_filter( array_map( 'trim', explode( ',', $atts['subscriptions'] ?: $default_sub_ids ) ) );
 
+	// role check
 	$has_access = false;
-
 	foreach ( $roles as $role ) {
-		if ( in_array( $role, $user->roles, true ) ) {
+		if ( in_array( strtolower( $role ), array_map( 'strtolower', $user->roles ), true ) ) {
 			$has_access = true;
 			break;
 		}
 	}
 
+	// subscription check (optional if woo subscriptions is active)
 	if ( ! $has_access && function_exists( 'wcs_user_has_subscription' ) ) {
 		foreach ( $subscriptions as $sub_id ) {
 			if ( wcs_user_has_subscription( $user_id, $sub_id, 'active' ) ) {
@@ -218,6 +232,7 @@ add_shortcode( 'file_access', function( $atts ) {
 		}
 	}
 
+	// allow if access granted, otherwise show message
 	if ( $has_access ) {
 		return sprintf(
 			'<p><a href="%s" target="_blank" rel="noopener noreferrer"><strong>%s</strong></a></p>',
