@@ -55,17 +55,20 @@ function sfa_settings_page() {
         $message_not_logged_in = isset( $_POST['sfa_message_not_logged_in'] ) ? sanitize_text_field( wp_unslash( $_POST['sfa_message_not_logged_in'] ) ) : '';
         $default_label = isset( $_POST['sfa_default_label'] ) ? sanitize_text_field( wp_unslash( $_POST['sfa_default_label'] ) ) : '';
 
-        // normalize roles: split on commas/whitespace, lowercase, sanitize_key, unique, join
+        // normalize roles: split on commas only
         $roles_input = isset( $_POST['sfa_default_roles'] ) ? wp_unslash( $_POST['sfa_default_roles'] ) : '';
-        $roles_parts = preg_split( '/[,\s]+/', $roles_input, -1, PREG_SPLIT_NO_EMPTY );
-        $roles_parts = array_map( 'sanitize_key', array_map( 'strtolower', array_map( 'trim', (array) $roles_parts ) ) );
+        $roles_parts = explode( ',', $roles_input );
+        $roles_parts = array_map( 'trim', $roles_parts );
+        $roles_parts = array_map( 'strtolower', $roles_parts );
+        $roles_parts = array_map( 'sanitize_key', $roles_parts );
         $roles_parts = array_values( array_unique( array_filter( $roles_parts ) ) );
         $roles_string = implode( ',', $roles_parts );
 
-        // normalize subscription ids: digits only, unique, join
+        // normalize subscription ids: split on commas only
         $subs_input = isset( $_POST['sfa_default_subscription_ids'] ) ? wp_unslash( $_POST['sfa_default_subscription_ids'] ) : '';
-        $subs_parts = preg_split( '/[,\s]+/', $subs_input, -1, PREG_SPLIT_NO_EMPTY );
-        $subs_parts = array_map( function( $v ) { return preg_replace( '/\D+/', '', $v ); }, (array) $subs_parts );
+        $subs_parts = explode( ',', $subs_input );
+        $subs_parts = array_map( 'trim', $subs_parts );
+        $subs_parts = array_map( function( $v ) { return preg_replace( '/\D+/', '', $v ); }, $subs_parts );
         $subs_parts = array_values( array_unique( array_filter( $subs_parts ) ) );
         $subs_string = implode( ',', $subs_parts );
 
