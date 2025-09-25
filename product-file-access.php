@@ -49,19 +49,16 @@ function pfa_settings_page() {
 
 	// save settings
 	if ( isset( $_POST['pfa_save_settings'] ) && isset( $_POST['pfa_nonce'] ) && check_admin_referer( 'pfa_save_settings', 'pfa_nonce' ) ) {
-		// sanitize text fields
 		$message_no_access = isset( $_POST['pfa_message_no_access'] ) ? sanitize_text_field( wp_unslash( $_POST['pfa_message_no_access'] ) ) : '';
 		$message_invalid_url = isset( $_POST['pfa_message_invalid_url'] ) ? sanitize_text_field( wp_unslash( $_POST['pfa_message_invalid_url'] ) ) : '';
 		$message_not_logged_in = isset( $_POST['pfa_message_not_logged_in'] ) ? sanitize_text_field( wp_unslash( $_POST['pfa_message_not_logged_in'] ) ) : '';
 		$default_label = isset( $_POST['pfa_default_label'] ) ? sanitize_text_field( wp_unslash( $_POST['pfa_default_label'] ) ) : '';
 
-		// normalize roles to trimmed, lowercase, comma-separated
 		$roles_input = isset( $_POST['pfa_default_roles'] ) ? wp_unslash( $_POST['pfa_default_roles'] ) : '';
 		$roles_parts = array_filter( array_map( 'trim', explode( ',', $roles_input ) ) );
 		$roles_parts = array_map( 'strtolower', $roles_parts );
 		$roles_string = implode( ',', $roles_parts );
 
-		// normalize subscription ids to trimmed csv (leave validation to store owner)
 		$subs_input = isset( $_POST['pfa_default_subscription_ids'] ) ? wp_unslash( $_POST['pfa_default_subscription_ids'] ) : '';
 		$subs_parts = array_filter( array_map( 'trim', explode( ',', $subs_input ) ) );
 		$subs_string = implode( ',', $subs_parts );
@@ -76,20 +73,17 @@ function pfa_settings_page() {
 		echo '<div class="updated"><p><strong>' . esc_html__( 'Settings saved successfully.', 'product-file-access' ) . '</strong></p></div>';
 	}
 
-	// get current settings
 	$message_no_access = get_option( 'pfa_message_no_access', '<strong>' . __( 'You do not have access to this file.', 'product-file-access' ) . '</strong>' );
 	$message_invalid_url = get_option( 'pfa_message_invalid_url', '<strong>' . __( 'Invalid file URL provided.', 'product-file-access' ) . '</strong>' );
 	$message_not_logged_in = get_option( 'pfa_message_not_logged_in', '<strong>' . __( 'Please log in to access this file.', 'product-file-access' ) . '</strong>' );
 	$default_subscription_ids = get_option( 'pfa_default_subscription_ids', '' );
-	$default_roles = get_option( 'pfa_default_roles', 'administrator' ); // admins allowed by default per requirements
+	$default_roles = get_option( 'pfa_default_roles', 'administrator' );
 	$default_label = get_option( 'pfa_default_label', __( 'Download File', 'product-file-access' ) );
-
 	?>
 	<div class="wrap">
 		<h1><?php echo esc_html( __( 'Product File Access Settings', 'product-file-access' ) ); ?></h1>
 
 		<?php
-		// show a scoped admin notice if woo subscriptions is not active
 		if ( ! function_exists( 'wcs_user_has_subscription' ) ) {
 			echo '<div class="notice notice-warning"><p>' .
 				esc_html__( 'WooCommerce Subscriptions is not active. Subscription checks will be skipped; only role-based access will apply.', 'product-file-access' ) .
@@ -99,7 +93,7 @@ function pfa_settings_page() {
 
 		<h2 class="nav-tab-wrapper">
 			<a href="#error-messages" class="nav-tab nav-tab-active"><?php echo esc_html( __( 'Error Messages', 'product-file-access' ) ); ?></a>
-			<a href="#woocommerce-settings" class="nav-tab"><?php echo esc_html( __( 'Access Defaults', 'product-file-access' ) ); ?></a>
+			<a href="#access-defaults" class="nav-tab"><?php echo esc_html( __( 'Access Defaults', 'product-file-access' ) ); ?></a>
 		</h2>
 
 		<form method="POST">
@@ -123,7 +117,7 @@ function pfa_settings_page() {
 				</table>
 			</div>
 
-			<div id="woocommerce-settings" class="tab-content" style="display: none;">
+			<div id="access-defaults" class="tab-content" style="display: none;">
 				<h3><?php echo esc_html( __( 'Access Defaults', 'product-file-access' ) ); ?></h3>
 				<table class="form-table">
 					<tr>
@@ -197,32 +191,30 @@ add_shortcode( 'file_access', function( $atts ) {
 	$url = esc_url( $atts['url'] );
 	$label = esc_html( $atts['label'] );
 
-	// minimal validation by design
 	if ( empty( $url ) ) {
-		return '<p>' . $message_invalid_url . '</p>';
+		return '<p>' . wp_kses_post( $message_invalid_url ) . '</p>';
 	}
 
 	if ( ! is_user_logged_in() ) {
-		return '<p>' . $message_not_logged_in . '</p>';
+		return '<p>' . wp_kses_post( $message_not_logged_in ) . '</p>';
 	}
 
 	$user_id = get_current_user_id();
 	$user = wp_get_current_user();
 
-	// resolve roles and subscriptions (merge shortcode or defaults)
 	$roles = array_filter( array_map( 'trim', explode( ',', $atts['roles'] ?: implode( ',', $default_roles ) ) ) );
 	$subscriptions = array_filter( array_map( 'trim', explode( ',', $atts['subscriptions'] ?: $default_sub_ids ) ) );
 
-	// role check
 	$has_access = false;
+
+	$user_roles_lower = array_map( 'strtolower', (array) $user->roles );
 	foreach ( $roles as $role ) {
-		if ( in_array( strtolower( $role ), array_map( 'strtolower', $user->roles ), true ) ) {
+		if ( in_array( strtolower( $role ), $user_roles_lower, true ) ) {
 			$has_access = true;
 			break;
 		}
 	}
 
-	// subscription check (optional if woo subscriptions is active)
 	if ( ! $has_access && function_exists( 'wcs_user_has_subscription' ) ) {
 		foreach ( $subscriptions as $sub_id ) {
 			if ( wcs_user_has_subscription( $user_id, $sub_id, 'active' ) ) {
@@ -232,7 +224,6 @@ add_shortcode( 'file_access', function( $atts ) {
 		}
 	}
 
-	// allow if access granted, otherwise show message
 	if ( $has_access ) {
 		return sprintf(
 			'<p><a href="%s" target="_blank" rel="noopener noreferrer"><strong>%s</strong></a></p>',
@@ -241,7 +232,7 @@ add_shortcode( 'file_access', function( $atts ) {
 		);
 	}
 
-	return '<p>' . $message_no_access . '</p>';
+	return '<p>' . wp_kses_post( $message_no_access ) . '</p>';
 } );
 
 // Ref: ChatGPT
