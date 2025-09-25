@@ -10,6 +10,7 @@ License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 GitHub Plugin URI: littlebizzy/product-file-access
 Primary Branch: master
+Text Domain: product-file-access
 */
 
 // prevent direct access
@@ -22,6 +23,11 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
 	$overrides[] = 'product-file-access/product-file-access.php';
 	return $overrides;
 }, 999 );
+
+// load text domain
+add_action( 'plugins_loaded', function() {
+	load_plugin_textdomain( 'product-file-access', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+} );
 
 // register settings page
 add_action( 'admin_menu', function() {
