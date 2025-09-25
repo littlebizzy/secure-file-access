@@ -47,40 +47,48 @@ function sfa_settings_page() {
 		return;
 	}
 
-	// save settings
-	if ( isset( $_POST['sfa_save_settings'] ) && isset( $_POST['sfa_nonce'] ) && check_admin_referer( 'sfa_save_settings', 'sfa_nonce' ) ) {
-		$message_no_access = isset( $_POST['sfa_message_no_access'] ) ? sanitize_text_field( wp_unslash( $_POST['sfa_message_no_access'] ) ) : '';
-		$message_invalid_url = isset( $_POST['sfa_message_invalid_url'] ) ? sanitize_text_field( wp_unslash( $_POST['sfa_message_invalid_url'] ) ) : '';
-		$message_not_logged_in = isset( $_POST['sfa_message_not_logged_in'] ) ? sanitize_text_field( wp_unslash( $_POST['sfa_message_not_logged_in'] ) ) : '';
-		$default_label = isset( $_POST['sfa_default_label'] ) ? sanitize_text_field( wp_unslash( $_POST['sfa_default_label'] ) ) : '';
+    // save settings
+    if ( isset( $_POST['sfa_save_settings'] ) && isset( $_POST['sfa_nonce'] ) && check_admin_referer( 'sfa_save_settings', 'sfa_nonce' ) ) {
+        // sanitize simple text fields
+        $message_no_access = isset( $_POST['sfa_message_no_access'] ) ? sanitize_text_field( wp_unslash( $_POST['sfa_message_no_access'] ) ) : '';
+        $message_invalid_url = isset( $_POST['sfa_message_invalid_url'] ) ? sanitize_text_field( wp_unslash( $_POST['sfa_message_invalid_url'] ) ) : '';
+        $message_not_logged_in = isset( $_POST['sfa_message_not_logged_in'] ) ? sanitize_text_field( wp_unslash( $_POST['sfa_message_not_logged_in'] ) ) : '';
+        $default_label = isset( $_POST['sfa_default_label'] ) ? sanitize_text_field( wp_unslash( $_POST['sfa_default_label'] ) ) : '';
 
-		$roles_input = isset( $_POST['sfa_default_roles'] ) ? wp_unslash( $_POST['sfa_default_roles'] ) : '';
-		$roles_parts = array_filter( array_map( 'trim', explode( ',', $roles_input ) ) );
-		$roles_parts = array_map( 'strtolower', $roles_parts );
-		$roles_string = implode( ',', $roles_parts );
+        // normalize roles: split on commas/whitespace, lowercase, sanitize_key, unique, join
+        $roles_input = isset( $_POST['sfa_default_roles'] ) ? wp_unslash( $_POST['sfa_default_roles'] ) : '';
+        $roles_parts = preg_split( '/[,\s]+/', $roles_input, -1, PREG_SPLIT_NO_EMPTY );
+        $roles_parts = array_map( 'sanitize_key', array_map( 'strtolower', array_map( 'trim', (array) $roles_parts ) ) );
+        $roles_parts = array_values( array_unique( array_filter( $roles_parts ) ) );
+        $roles_string = implode( ',', $roles_parts );
 
-		$subs_input = isset( $_POST['sfa_default_subscription_ids'] ) ? wp_unslash( $_POST['sfa_default_subscription_ids'] ) : '';
-		$subs_parts = array_filter( array_map( 'trim', explode( ',', $subs_input ) ) );
-		$subs_string = implode( ',', $subs_parts );
+        // normalize subscription ids: digits only, unique, join
+        $subs_input = isset( $_POST['sfa_default_subscription_ids'] ) ? wp_unslash( $_POST['sfa_default_subscription_ids'] ) : '';
+        $subs_parts = preg_split( '/[,\s]+/', $subs_input, -1, PREG_SPLIT_NO_EMPTY );
+        $subs_parts = array_map( function( $v ) { return preg_replace( '/\D+/', '', $v ); }, (array) $subs_parts );
+        $subs_parts = array_values( array_unique( array_filter( $subs_parts ) ) );
+        $subs_string = implode( ',', $subs_parts );
 
-		update_option( 'sfa_message_no_access', $message_no_access );
-		update_option( 'sfa_message_invalid_url', $message_invalid_url );
-		update_option( 'sfa_message_not_logged_in', $message_not_logged_in );
-		update_option( 'sfa_default_subscription_ids', $subs_string );
-		update_option( 'sfa_default_roles', $roles_string );
-		update_option( 'sfa_default_label', $default_label );
+        // persist
+        update_option( 'sfa_message_no_access', $message_no_access );
+        update_option( 'sfa_message_invalid_url', $message_invalid_url );
+        update_option( 'sfa_message_not_logged_in', $message_not_logged_in );
+        update_option( 'sfa_default_subscription_ids', $subs_string );
+        update_option( 'sfa_default_roles', $roles_string );
+        update_option( 'sfa_default_label', $default_label );
 
-		echo '<div class="updated"><p><strong>' . esc_html__( 'Settings saved successfully.', 'secure-file-access' ) . '</strong></p></div>';
-	}
+        // admin notice
+        echo '<div class="updated"><p><strong>' . esc_html__( 'Settings saved successfully.', 'secure-file-access' ) . '</strong></p></div>';
+    }
 
-	// load settings
-	$message_no_access = get_option( 'sfa_message_no_access', '<strong>' . __( 'You do not have access to this file.', 'secure-file-access' ) . '</strong>' );
-	$message_invalid_url = get_option( 'sfa_message_invalid_url', '<strong>' . __( 'Invalid file URL provided.', 'secure-file-access' ) . '</strong>' );
-	$message_not_logged_in = get_option( 'sfa_message_not_logged_in', '<strong>' . __( 'Please log in to access this file.', 'secure-file-access' ) . '</strong>' );
-	$default_subscription_ids = get_option( 'sfa_default_subscription_ids', '' );
-	$default_roles = get_option( 'sfa_default_roles', 'administrator' );
-	$default_label = get_option( 'sfa_default_label', __( 'Download File', 'secure-file-access' ) );
-	?>
+    // load settings
+    $message_no_access = get_option( 'sfa_message_no_access', '<strong>' . __( 'You do not have access to this file.', 'secure-file-access' ) . '</strong>' );
+    $message_invalid_url = get_option( 'sfa_message_invalid_url', '<strong>' . __( 'Invalid file URL provided.', 'secure-file-access' ) . '</strong>' );
+    $message_not_logged_in = get_option( 'sfa_message_not_logged_in', '<strong>' . __( 'Please log in to access this file.', 'secure-file-access' ) . '</strong>' );
+    $default_subscription_ids = get_option( 'sfa_default_subscription_ids', '' );
+    $default_roles = get_option( 'sfa_default_roles', 'administrator' );
+    $default_label = get_option( 'sfa_default_label', __( 'Download File', 'secure-file-access' ) );
+    ?>
 	<div class="wrap">
 		<h1><?php echo esc_html( __( 'Secure File Access Settings', 'secure-file-access' ) ); ?></h1>
 
