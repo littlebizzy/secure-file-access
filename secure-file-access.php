@@ -183,76 +183,80 @@ add_shortcode( 'file_access', function( $atts ) {
 	$default_label = get_option( 'sfa_default_label', __( 'Download File', 'secure-file-access' ) );
 	$default_sub_ids = get_option( 'sfa_default_subscription_ids', '' );
 	$default_roles = explode( ',', get_option( 'sfa_default_roles', 'administrator' ) );
+	$default_roles = array_values( array_filter( array_map( 'sanitize_key', array_map( 'strtolower', array_map( 'trim', $default_roles ) ) ) ) );
 
 	// messages
 	$message_no_access = get_option( 'sfa_message_no_access', '<strong>' . __( 'You do not have access to this file.', 'secure-file-access' ) . '</strong>' );
 	$message_invalid_url = get_option( 'sfa_message_invalid_url', '<strong>' . __( 'Invalid file URL provided.', 'secure-file-access' ) . '</strong>' );
 	$message_not_logged_in = get_option( 'sfa_message_not_logged_in', '<strong>' . __( 'Please log in to access this file.', 'secure-file-access' ) . '</strong>' );
 
-	// shortcode atts
-	$atts = shortcode_atts(
-		[
-			'url' => '',
-			'label' => $default_label,
-			'subscriptions' => '',
-			'roles' => '',
-		],
-		$atts,
-		'file_access'
-	);
+    // shortcode atts
+    $atts = shortcode_atts(
+        [
+            'url' => '',
+            'label' => $default_label,
+            'subscriptions' => '',
+            'roles' => '',
+        ],
+        $atts,
+        'file_access'
+    );
 
-	$url = esc_url( $atts['url'] );
-	$label = esc_html( $atts['label'] );
+    $url = esc_url( $atts['url'] );
+    $label = esc_html( $atts['label'] );
 
-	// require url
-	if ( empty( $url ) ) {
-		return '<p>' . wp_kses_post( $message_invalid_url ) . '</p>';
-	}
+    // require url
+    if ( empty( $url ) ) {
+        return '<p>' . wp_kses_post( $message_invalid_url ) . '</p>';
+    }
 
-	// require login
-	if ( ! is_user_logged_in() ) {
-		return '<p>' . wp_kses_post( $message_not_logged_in ) . '</p>';
-	}
+    // require login
+    if ( ! is_user_logged_in() ) {
+        return '<p>' . wp_kses_post( $message_not_logged_in ) . '</p>';
+    }
 
-	// user context
-	$user_id = get_current_user_id();
-	$user = wp_get_current_user();
+    // user context
+    $user_id = get_current_user_id();
+    $user = wp_get_current_user();
 
-	// compute rules
-	$roles = array_filter( array_map( 'trim', explode( ',', $atts['roles'] ?: implode( ',', $default_roles ) ) ) );
-	$subscriptions = array_filter( array_map( 'trim', explode( ',', $atts['subscriptions'] ?: $default_sub_ids ) ) );
+    // compute rules
+    $roles = $atts['roles'] ? $atts['roles'] : implode( ',', $default_roles );
+    $roles = preg_split( '/[,\s]+/', $roles, -1, PREG_SPLIT_NO_EMPTY );
+    $roles = array_values( array_unique( array_map( 'sanitize_key', array_map( 'strtolower', array_map( 'trim', $roles ) ) ) ) );
 
-	$has_access = false;
+    $subscriptions = $atts['subscriptions'] ? $atts['subscriptions'] : $default_sub_ids;
+    $subscriptions = preg_split( '/[,\s]+/', $subscriptions, -1, PREG_SPLIT_NO_EMPTY );
+    $subscriptions = array_values( array_unique( array_filter( array_map( function( $v ) { return preg_replace( '/\D+/', '', $v ); }, $subscriptions ) ) ) );
 
-	// role check
-	$user_roles_lower = array_map( 'strtolower', (array) $user->roles );
-	foreach ( $roles as $role ) {
-		if ( in_array( strtolower( $role ), $user_roles_lower, true ) ) {
-			$has_access = true;
-			break;
-		}
-	}
+    $has_access = false;
 
-	// subscription check
-	if ( ! $has_access && function_exists( 'wcs_user_has_subscription' ) ) {
-		foreach ( $subscriptions as $sub_id ) {
-			if ( wcs_user_has_subscription( $user_id, $sub_id, 'active' ) ) {
-				$has_access = true;
-				break;
-			}
-		}
-	}
+    // role check
+    $user_roles_lower = array_map( 'strtolower', (array) $user->roles );
+    if ( array_intersect( $roles, $user_roles_lower ) ) {
+        $has_access = true;
+    }
 
-	// render
-	if ( $has_access ) {
-		return sprintf(
-			'<p><a href="%s" target="_blank" rel="noopener noreferrer"><strong>%s</strong></a></p>',
-			esc_url( $url ),
-			esc_html( $label )
-		);
-	}
+    // subscription check
+    if ( ! $has_access && function_exists( 'wcs_user_has_subscription' ) ) {
+        foreach ( $subscriptions as $sub_id ) {
+            $sub_id = absint( $sub_id );
+            if ( $sub_id && wcs_user_has_subscription( $user_id, $sub_id, 'active' ) ) {
+                $has_access = true;
+                break;
+            }
+        }
+    }
 
-	return '<p>' . wp_kses_post( $message_no_access ) . '</p>';
+    // render
+    if ( $has_access ) {
+        return sprintf(
+            '<p><a href="%s" target="_blank" rel="noopener noreferrer"><strong>%s</strong></a></p>',
+            esc_url( $url ),
+            esc_html( $label )
+        );
+    }
+
+    return '<p>' . wp_kses_post( $message_no_access ) . '</p>';
 } );
 
 // Ref: ChatGPT
