@@ -132,8 +132,8 @@ function sfa_settings_page() {
         ?>
 
 		<h2 class="nav-tab-wrapper">
-			<a href="#access-defaults" class="nav-tab nav-tab-active"><?php echo esc_html( __( 'Access Defaults', 'secure-file-access' ) ); ?></a>
-			<a href="#error-messages" class="nav-tab"><?php echo esc_html( __( 'Error Messages', 'secure-file-access' ) ); ?></a>
+			<a href="#access-defaults" class="nav-tab nav-tab-active"><?php _e( 'Access Defaults', 'secure-file-access' ); ?></a>
+			<a href="#error-messages" class="nav-tab"><?php _e( 'Error Messages', 'secure-file-access' ); ?></a>
 		</h2>
 
         <form method="post">
@@ -213,7 +213,9 @@ add_shortcode( 'file_access', function( $atts ) {
     $default_label = get_option( 'sfa_default_label', __( 'Download File', 'secure-file-access' ) );
     $default_sub_ids = get_option( 'sfa_default_subscription_ids', '' );
     $default_roles = explode( ',', get_option( 'sfa_default_roles', 'administrator' ) );
-    $default_roles = array_values( array_filter( array_map( 'sanitize_key', array_map( 'strtolower', array_map( 'trim', $default_roles ) ) ) ) );
+    $default_roles = array_map( 'trim', $default_roles );
+    $default_roles = array_map( 'sanitize_key', $default_roles ); // sanitize_key lowercases
+    $default_roles = array_values( array_filter( $default_roles ) );
 
     // messages (plain text defaults)
     $message_no_access = get_option( 'sfa_message_no_access', __( 'You do not have access to this file.', 'secure-file-access' ) );
