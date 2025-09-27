@@ -260,7 +260,7 @@ add_shortcode( 'file_access', function( $atts ) {
 	// render
 	if ( $has_access ) {
 		return sprintf(
-			'<p><a href="%s" target="_blank" rel="noopener noreferrer"><strong>%s</strong></a></p>',
+			'<p><a href="%s" target="_blank" rel="noopener noreferrer">%s</a></p>',
 			esc_url( $url ),
 			esc_html( $label )
 		);
