@@ -118,75 +118,76 @@ function sfa_settings_page() {
 	$default_roles = get_option( 'sfa_default_roles', 'administrator' );
 	$default_label = get_option( 'sfa_default_label', __( 'Download File', 'secure-file-access' ) );
 	?>
-	<div class="wrap">
-		<h1><?php echo esc_html( __( 'Secure File Access Settings', 'secure-file-access' ) ); ?></h1>
+    <div class="wrap">
+        <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
-		<?php
-		// subscriptions notice
-		if ( ! function_exists( 'wcs_user_has_subscription' ) ) {
-			echo '<div class="notice notice-warning"><p>' .
-				esc_html__( 'WooCommerce Subscriptions is not active. Subscription checks will be skipped; only role-based access will apply.', 'secure-file-access' ) .
-			'</p></div>';
-		}
-		?>
+        <?php
+        // subscriptions notice
+        if ( ! function_exists( 'wcs_user_has_subscription' ) ) {
+            printf(
+                '<div class="notice notice-warning"><p>%s</p></div>',
+                esc_html__( 'WooCommerce Subscriptions is not active. Subscription checks will be skipped; only role-based access will apply.', 'secure-file-access' )
+            );
+        }
+        ?>
 
 		<h2 class="nav-tab-wrapper">
-			<a href="#error-messages" class="nav-tab nav-tab-active"><?php echo esc_html( __( 'Error Messages', 'secure-file-access' ) ); ?></a>
-			<a href="#access-defaults" class="nav-tab"><?php echo esc_html( __( 'Access Defaults', 'secure-file-access' ) ); ?></a>
+			<a href="#access-defaults" class="nav-tab nav-tab-active"><?php echo esc_html( __( 'Access Defaults', 'secure-file-access' ) ); ?></a>
+			<a href="#error-messages" class="nav-tab"><?php echo esc_html( __( 'Error Messages', 'secure-file-access' ) ); ?></a>
 		</h2>
 
-		<form method="POST">
-			<?php wp_nonce_field( 'sfa_save_settings', 'sfa_nonce' ); ?>
+        <form method="post">
+            <?php wp_nonce_field( 'sfa_save_settings', 'sfa_nonce' ); ?>
 
-			<div id="error-messages" class="tab-content" style="display: block;">
-				<h3><?php echo esc_html( __( 'Error Messages', 'secure-file-access' ) ); ?></h3>
-				<table class="form-table">
-					<tr>
-						<th scope="row"><?php echo esc_html( __( 'Message: No Access', 'secure-file-access' ) ); ?></th>
-						<td><input type="text" name="sfa_message_no_access" value="<?php echo esc_attr( $message_no_access ); ?>" class="regular-text" style="width: 100%;"></td>
-					</tr>
-					<tr>
-						<th scope="row"><?php echo esc_html( __( 'Message: Invalid File URL', 'secure-file-access' ) ); ?></th>
-						<td><input type="text" name="sfa_message_invalid_url" value="<?php echo esc_attr( $message_invalid_url ); ?>" class="regular-text" style="width: 100%;"></td>
-					</tr>
-					<tr>
-						<th scope="row"><?php echo esc_html( __( 'Message: Not Logged In', 'secure-file-access' ) ); ?></th>
-						<td><input type="text" name="sfa_message_not_logged_in" value="<?php echo esc_attr( $message_not_logged_in ); ?>" class="regular-text" style="width: 100%;"></td>
-					</tr>
-				</table>
-			</div>
+            <div id="access-defaults" class="tab-content" style="display: block;">
+                <h3><?php echo esc_html__( 'Access Defaults', 'secure-file-access' ); ?></h3>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><?php echo esc_html__( 'Default Subscription IDs', 'secure-file-access' ); ?></th>
+                        <td>
+                            <input type="text" name="sfa_default_subscription_ids" value="<?php echo esc_attr( $default_subscription_ids ); ?>" class="regular-text">
+                            <p class="description"><?php echo esc_html__( 'Comma-separated subscription product IDs. Leave empty to rely on roles only.', 'secure-file-access' ); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php echo esc_html__( 'Default Roles', 'secure-file-access' ); ?></th>
+                        <td>
+                            <input type="text" name="sfa_default_roles" value="<?php echo esc_attr( $default_roles ); ?>" class="regular-text">
+                            <p class="description"><?php echo esc_html__( 'Comma-separated WordPress roles (e.g., administrator,editor). Administrators have access by default.', 'secure-file-access' ); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php echo esc_html__( 'Default Download Button Label', 'secure-file-access' ); ?></th>
+                        <td>
+                            <input type="text" name="sfa_default_label" value="<?php echo esc_attr( $default_label ); ?>" class="regular-text">
+                            <p class="description"><?php echo esc_html__( 'Can be overridden in the shortcode using the "label" attribute.', 'secure-file-access' ); ?></p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
 
-			<div id="access-defaults" class="tab-content" style="display: none;">
-				<h3><?php echo esc_html( __( 'Access Defaults', 'secure-file-access' ) ); ?></h3>
-				<table class="form-table">
-					<tr>
-						<th scope="row"><?php echo esc_html( __( 'Default Subscription IDs', 'secure-file-access' ) ); ?></th>
-						<td>
-							<input type="text" name="sfa_default_subscription_ids" value="<?php echo esc_attr( $default_subscription_ids ); ?>" class="regular-text" style="width: 100%;">
-							<p class="description"><?php echo esc_html( __( 'Comma-separated subscription product IDs. Leave empty to rely on roles only.', 'secure-file-access' ) ); ?></p>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><?php echo esc_html( __( 'Default Roles', 'secure-file-access' ) ); ?></th>
-						<td>
-							<input type="text" name="sfa_default_roles" value="<?php echo esc_attr( $default_roles ); ?>" class="regular-text" style="width: 100%;">
-							<p class="description"><?php echo esc_html( __( 'Comma-separated WordPress roles (e.g., administrator,editor). Administrators have access by default.', 'secure-file-access' ) ); ?></p>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><?php echo esc_html( __( 'Default Download Button Label', 'secure-file-access' ) ); ?></th>
-						<td>
-							<input type="text" name="sfa_default_label" value="<?php echo esc_attr( $default_label ); ?>" class="regular-text" style="width: 100%;">
-							<p class="description"><?php echo esc_html( __( 'Can be overridden in the shortcode using the "label" attribute.', 'secure-file-access' ) ); ?></p>
-						</td>
-					</tr>
-				</table>
-			</div>
+            <div id="error-messages" class="tab-content" style="display: none;">
+                <h3><?php echo esc_html__( 'Error Messages', 'secure-file-access' ); ?></h3>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><?php echo esc_html__( 'Message: No Access', 'secure-file-access' ); ?></th>
+                        <td><input type="text" name="sfa_message_no_access" value="<?php echo esc_attr( $message_no_access ); ?>" class="regular-text"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php echo esc_html__( 'Message: Invalid File URL', 'secure-file-access' ); ?></th>
+                        <td><input type="text" name="sfa_message_invalid_url" value="<?php echo esc_attr( $message_invalid_url ); ?>" class="regular-text"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php echo esc_html__( 'Message: Not Logged In', 'secure-file-access' ); ?></th>
+                        <td><input type="text" name="sfa_message_not_logged_in" value="<?php echo esc_attr( $message_not_logged_in ); ?>" class="regular-text"></td>
+                    </tr>
+                </table>
+            </div>
 
-			<p class="submit">
-				<input type="submit" name="sfa_save_settings" class="button button-primary" value="<?php echo esc_attr( __( 'Save Changes', 'secure-file-access' ) ); ?>">
-			</p>
-		</form>
+            <p class="submit">
+                <input type="submit" name="sfa_save_settings" class="button button-primary" value="<?php echo esc_attr__( 'Save Changes', 'secure-file-access' ); ?>">
+            </p>
+        </form>
 	</div>
 
 	<script>
