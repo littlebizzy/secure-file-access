@@ -289,7 +289,7 @@ add_shortcode( 'file_access', function( $atts ) {
     // render
     if ( $has_access ) {
         return sprintf(
-            '<div class="sfa sfa--link"><a class="sfa__a" href="%s" target="_blank" rel="noopener noreferrer"><span class="sfa__label">%s</span></a></div>',
+            '<div class="sfa-wrapper"><a class="sfa-link" href="%s" rel="noopener noreferrer"><span class="sfa-label">%s</span></a></div>',
             esc_url( $url ),
             esc_html( $label )
         );
