@@ -171,15 +171,24 @@ function sfa_settings_page() {
                 <table class="form-table">
                     <tr>
                         <th scope="row"><?php echo esc_html__( 'Message: No Access', 'secure-file-access' ); ?></th>
-                        <td><input type="text" name="sfa_message_no_access" value="<?php echo esc_attr( $message_no_access ); ?>" class="regular-text" style="width:100%;"></td>
+                        <td>
+                            <input type="text" name="sfa_message_no_access" value="<?php echo esc_attr( $message_no_access ); ?>" class="regular-text" style="width:100%;">
+                            <p class="description"><?php echo esc_html__( 'Shown when a logged-in user does not meet the required role or subscription.', 'secure-file-access' ); ?></p>
+                        </td>
                     </tr>
                     <tr>
                         <th scope="row"><?php echo esc_html__( 'Message: Invalid File URL', 'secure-file-access' ); ?></th>
-                        <td><input type="text" name="sfa_message_invalid_url" value="<?php echo esc_attr( $message_invalid_url ); ?>" class="regular-text" style="width:100%;"></td>
+                        <td>
+                            <input type="text" name="sfa_message_invalid_url" value="<?php echo esc_attr( $message_invalid_url ); ?>" class="regular-text" style="width:100%;">
+                            <p class="description"><?php echo esc_html__( 'Shown when the shortcode "url" attribute is empty or invalid.', 'secure-file-access' ); ?></p>
+                        </td>
                     </tr>
                     <tr>
                         <th scope="row"><?php echo esc_html__( 'Message: Not Logged In', 'secure-file-access' ); ?></th>
-                        <td><input type="text" name="sfa_message_not_logged_in" value="<?php echo esc_attr( $message_not_logged_in ); ?>" class="regular-text" style="width:100%;"></td>
+                        <td>
+                            <input type="text" name="sfa_message_not_logged_in" value="<?php echo esc_attr( $message_not_logged_in ); ?>" class="regular-text" style="width:100%;">
+                            <p class="description"><?php echo esc_html__( 'Shown when a visitor is not logged in but tries to access a protected file.', 'secure-file-access' ); ?></p>
+                        </td>
                     </tr>
                 </table>
             </div>
