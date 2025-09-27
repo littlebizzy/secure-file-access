@@ -118,7 +118,7 @@ function sfa_settings_page() {
 	$default_roles = get_option( 'sfa_default_roles', 'administrator' );
 	$default_label = get_option( 'sfa_default_label', __( 'Download File', 'secure-file-access' ) );
 	?>
-    <div class="wrap">
+    <div class="wrap" id="sfa-settings">
         <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
         <?php
@@ -190,20 +190,33 @@ function sfa_settings_page() {
         </form>
 	</div>
 
-	<script>
-		// simple tab toggling without external files
-		document.querySelectorAll('.nav-tab').forEach(function(tab) {
-			tab.addEventListener('click', function(e) {
-				e.preventDefault();
-				document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('nav-tab-active'); });
-				this.classList.add('nav-tab-active');
-				document.querySelectorAll('.tab-content').forEach(function(content) { content.style.display = 'none'; });
-				var target = this.getAttribute('href');
-				var pane = document.querySelector(target);
-				if (pane) { pane.style.display = 'block'; }
-			});
-		});
-	</script>
+    <script>
+        // simple tab toggling (scoped to #sfa-settings)
+        (function () {
+            var wrap = document.getElementById('sfa-settings');
+            if (!wrap) { return; }
+
+            wrap.querySelectorAll('.nav-tab').forEach(function (tab) {
+                tab.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    // tabs
+                    wrap.querySelectorAll('.nav-tab').forEach(function (t) {
+                        t.classList.remove('nav-tab-active');
+                    });
+                    this.classList.add('nav-tab-active');
+
+                    // panes
+                    wrap.querySelectorAll('.tab-content').forEach(function (content) {
+                        content.style.display = 'none';
+                    });
+                    var target = this.getAttribute('href');
+                    var pane = wrap.querySelector(target);
+                    if (pane) { pane.style.display = 'block'; }
+                });
+            });
+        })();
+    </script>
 	<?php
 }
 
@@ -252,13 +265,12 @@ add_shortcode( 'file_access', function( $atts ) {
     $user = wp_get_current_user();
 
     // compute rules
-    // split on commas only to avoid mid-word splits
-    $roles = $atts['roles'] ? $atts['roles'] : implode( ',', $default_roles );
-    $roles = explode( ',', $roles );
-    $roles = array_map( 'trim', $roles );
-    $roles = array_map( 'strtolower', $roles );
-    $roles = array_map( 'sanitize_key', $roles );
-    $roles = array_values( array_unique( array_filter( $roles ) ) );
+	// split on commas only to avoid mid-word splits
+	$roles = $atts['roles'] ? $atts['roles'] : implode( ',', $default_roles );
+	$roles = explode( ',', $roles );
+	$roles = array_map( 'trim', $roles );
+	$roles = array_map( 'sanitize_key', $roles );
+	$roles = array_values( array_unique( array_filter( $roles ) ) );
 
     // split on commas only and keep digits for ids
     $subscriptions = $atts['subscriptions'] ? $atts['subscriptions'] : $default_sub_ids;
@@ -269,11 +281,16 @@ add_shortcode( 'file_access', function( $atts ) {
 
     $has_access = false;
 
-    // role check
-    $user_roles_lower = array_map( 'strtolower', (array) $user->roles );
-    if ( array_intersect( $roles, $user_roles_lower ) ) {
+	// admin bypass
+    if ( user_can( $user_id, 'manage_options' ) ) {
         $has_access = true;
     }
+
+    // role check
+    $user_roles_sanitized = array_map( 'sanitize_key', (array) $user->roles );
+	if ( array_intersect( $roles, $user_roles_sanitized ) ) {
+    	$has_access = true;
+	}
 
     // subscription check
     if ( ! $has_access && function_exists( 'wcs_user_has_subscription' ) ) {
