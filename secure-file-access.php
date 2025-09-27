@@ -43,13 +43,13 @@ add_action( 'admin_menu', function() {
 
 // settings page content
 function sfa_settings_page() {
-	// ensure capability
-	if ( ! current_user_can( 'manage_options' ) ) {
-		return;
-	}
+    // ensure capability
+    if ( ! current_user_can( 'manage_options' ) ) {
+        return;
+    }
 
     // save settings
-    if ( isset( $_POST['sfa_save_settings'] ) && isset( $_POST['sfa_nonce'] ) && check_admin_referer( 'sfa_save_settings', 'sfa_nonce' ) ) {
+    if ( isset( $_POST['sfa_save_settings'] ) && check_admin_referer( 'sfa_save_settings', 'sfa_nonce' ) ) {
 
         // sanitize no access message
         $message_no_access = '';
@@ -82,8 +82,7 @@ function sfa_settings_page() {
         }
         $roles_parts = explode( ',', $roles_input );
         $roles_parts = array_map( 'trim', $roles_parts );
-        $roles_parts = array_map( 'strtolower', $roles_parts );
-        $roles_parts = array_map( 'sanitize_key', $roles_parts );
+        $roles_parts = array_map( 'sanitize_key', $roles_parts ); // sanitize_key lowercases
         $roles_parts = array_values( array_unique( array_filter( $roles_parts ) ) );
         $roles_string = implode( ',', $roles_parts );
 
@@ -94,9 +93,8 @@ function sfa_settings_page() {
         }
         $subs_parts = explode( ',', $subs_input );
         $subs_parts = array_map( 'trim', $subs_parts );
-        $subs_parts = array_map( function( $v ) {
-            return preg_replace( '/\D+/', '', $v );
-        }, $subs_parts );
+        $subs_parts = array_map( function( $v ) { return preg_replace( '/\D+/', '', $v ); }, $subs_parts );
+        $subs_parts = array_map( 'absint', $subs_parts );
         $subs_parts = array_values( array_unique( array_filter( $subs_parts ) ) );
         $subs_string = implode( ',', $subs_parts );
 
@@ -107,10 +105,10 @@ function sfa_settings_page() {
         update_option( 'sfa_default_subscription_ids', $subs_string );
         update_option( 'sfa_default_roles', $roles_string );
         update_option( 'sfa_default_label', $default_label );
-    }
 
-    // admin notice
-    echo '<div class="notice notice-success is-dismissible"><p><strong>' . esc_html__( 'Settings saved successfully.', 'secure-file-access' ) . '</strong></p></div>';
+        // admin notice
+        echo '<div class="notice notice-success is-dismissible"><p><strong>' . esc_html__( 'Settings saved successfully.', 'secure-file-access' ) . '</strong></p></div>';
+    }
 
 	// load settings (plain text defaults)
 	$message_no_access = get_option( 'sfa_message_no_access', __( 'You do not have access to this file.', 'secure-file-access' ) );
