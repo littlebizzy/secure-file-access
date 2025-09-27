@@ -237,15 +237,15 @@ add_shortcode( 'file_access', function( $atts ) {
     $url = esc_url( $atts['url'] );
     $label = esc_html( $atts['label'] );
 
-    // require url
-    if ( empty( $url ) ) {
-        return '<div class="sfa sfa--invalid-url" role="alert"><span class="sfa__message">' . esc_html( $message_invalid_url ) . '</span></div>';
-    }
+	// require url (use simple classes)
+	if ( empty( $url ) ) {
+    	return '<div class="sfa-wrapper sfa-invalid-url" role="alert"><span class="sfa-message">' . esc_html( $message_invalid_url ) . '</span></div>';
+	}
 
-    // require login
-    if ( ! is_user_logged_in() ) {
-        return '<div class="sfa sfa--not-logged-in" role="alert"><span class="sfa__message">' . esc_html( $message_not_logged_in ) . '</span></div>';
-    }
+	// require login (use simple classes)
+	if ( ! is_user_logged_in() ) {
+    	return '<div class="sfa-wrapper sfa-not-logged-in" role="alert"><span class="sfa-message">' . esc_html( $message_not_logged_in ) . '</span></div>';
+	}
 
     // user context
     $user_id = get_current_user_id();
@@ -289,13 +289,13 @@ add_shortcode( 'file_access', function( $atts ) {
     // render
     if ( $has_access ) {
         return sprintf(
-            '<div class="sfa-wrapper"><a class="sfa-link" href="%s" rel="noopener noreferrer"><span class="sfa-label">%s</span></a></div>',
+            '<div class="sfa-wrapper"><a class="sfa-link" href="%s"><span class="sfa-label">%s</span></a></div>',
             esc_url( $url ),
             esc_html( $label )
         );
     }
 
-    return '<div class="sfa sfa--no-access" role="alert"><span class="sfa__message">' . esc_html( $message_no_access ) . '</span></div>';
+    return '<div class="sfa-wrapper sfa-no-access" role="alert"><span class="sfa-message">' . esc_html( $message_no_access ) . '</span></div>';
 } );
 
 // Ref: ChatGPT
