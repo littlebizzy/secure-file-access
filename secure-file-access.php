@@ -145,21 +145,21 @@ function sfa_settings_page() {
                     <tr>
                         <th scope="row"><?php echo esc_html__( 'Default Subscription IDs', 'secure-file-access' ); ?></th>
                         <td>
-                            <input type="text" name="sfa_default_subscription_ids" value="<?php echo esc_attr( $default_subscription_ids ); ?>" class="regular-text">
+                            <input type="text" name="sfa_default_subscription_ids" value="<?php echo esc_attr( $default_subscription_ids ); ?>" class="regular-text" style="width:100%;">
                             <p class="description"><?php echo esc_html__( 'Comma-separated subscription product IDs. Leave empty to rely on roles only.', 'secure-file-access' ); ?></p>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row"><?php echo esc_html__( 'Default Roles', 'secure-file-access' ); ?></th>
                         <td>
-                            <input type="text" name="sfa_default_roles" value="<?php echo esc_attr( $default_roles ); ?>" class="regular-text">
+                            <input type="text" name="sfa_default_roles" value="<?php echo esc_attr( $default_roles ); ?>" class="regular-text" style="width:100%;">
                             <p class="description"><?php echo esc_html__( 'Comma-separated WordPress roles (e.g., administrator,editor). Administrators have access by default.', 'secure-file-access' ); ?></p>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row"><?php echo esc_html__( 'Default Download Button Label', 'secure-file-access' ); ?></th>
                         <td>
-                            <input type="text" name="sfa_default_label" value="<?php echo esc_attr( $default_label ); ?>" class="regular-text">
+                            <input type="text" name="sfa_default_label" value="<?php echo esc_attr( $default_label ); ?>" class="regular-text" style="width:100%;">
                             <p class="description"><?php echo esc_html__( 'Can be overridden in the shortcode using the "label" attribute.', 'secure-file-access' ); ?></p>
                         </td>
                     </tr>
@@ -171,15 +171,15 @@ function sfa_settings_page() {
                 <table class="form-table">
                     <tr>
                         <th scope="row"><?php echo esc_html__( 'Message: No Access', 'secure-file-access' ); ?></th>
-                        <td><input type="text" name="sfa_message_no_access" value="<?php echo esc_attr( $message_no_access ); ?>" class="regular-text"></td>
+                        <td><input type="text" name="sfa_message_no_access" value="<?php echo esc_attr( $message_no_access ); ?>" class="regular-text" style="width:100%;"></td>
                     </tr>
                     <tr>
                         <th scope="row"><?php echo esc_html__( 'Message: Invalid File URL', 'secure-file-access' ); ?></th>
-                        <td><input type="text" name="sfa_message_invalid_url" value="<?php echo esc_attr( $message_invalid_url ); ?>" class="regular-text"></td>
+                        <td><input type="text" name="sfa_message_invalid_url" value="<?php echo esc_attr( $message_invalid_url ); ?>" class="regular-text" style="width:100%;"></td>
                     </tr>
                     <tr>
                         <th scope="row"><?php echo esc_html__( 'Message: Not Logged In', 'secure-file-access' ); ?></th>
-                        <td><input type="text" name="sfa_message_not_logged_in" value="<?php echo esc_attr( $message_not_logged_in ); ?>" class="regular-text"></td>
+                        <td><input type="text" name="sfa_message_not_logged_in" value="<?php echo esc_attr( $message_not_logged_in ); ?>" class="regular-text" style="width:100%;"></td>
                     </tr>
                 </table>
             </div>
