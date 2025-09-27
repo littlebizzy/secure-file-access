@@ -153,7 +153,7 @@ function sfa_settings_page() {
                         <th scope="row"><?php echo esc_html__( 'Default Roles', 'secure-file-access' ); ?></th>
                         <td>
                             <input type="text" name="sfa_default_roles" value="<?php echo esc_attr( $default_roles ); ?>" class="regular-text" style="width:100%;">
-                            <p class="description"><?php echo esc_html__( 'Comma-separated WordPress roles (e.g., administrator,editor). Administrators have access by default.', 'secure-file-access' ); ?></p>
+                            <p class="description"><?php echo esc_html__( 'Comma-separated WordPress roles (e.g., editor,author). Administrators always have access.', 'secure-file-access' ); ?></p>
                         </td>
                     </tr>
                     <tr>
@@ -225,7 +225,7 @@ add_shortcode( 'file_access', function( $atts ) {
     // defaults
     $default_label = get_option( 'sfa_default_label', __( 'Download File', 'secure-file-access' ) );
     $default_sub_ids = get_option( 'sfa_default_subscription_ids', '' );
-    $default_roles = explode( ',', get_option( 'sfa_default_roles', 'administrator' ) );
+    $default_roles = explode( ',', get_option( 'sfa_default_roles', '' ) );
     $default_roles = array_map( 'trim', $default_roles );
     $default_roles = array_map( 'sanitize_key', $default_roles ); // sanitize_key lowercases
     $default_roles = array_values( array_filter( $default_roles ) );
@@ -233,7 +233,7 @@ add_shortcode( 'file_access', function( $atts ) {
     // messages (plain text defaults)
     $message_no_access = get_option( 'sfa_message_no_access', __( 'You do not have access to this file.', 'secure-file-access' ) );
     $message_invalid_url = get_option( 'sfa_message_invalid_url', __( 'Invalid file URL provided.', 'secure-file-access' ) );
-    $message_not_logged_in = get_option( 'sfa_message_not_logged_in', __( 'Please log in to access this file.', 'secure-file-access' ) );
+    $message_not_logged_in = get_option( 'sfa_message_not_logged_in', __( 'Please login to access this file.', 'secure-file-access' ) );
 
     // shortcode atts
     $atts = shortcode_atts(
