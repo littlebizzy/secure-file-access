@@ -129,8 +129,8 @@ function sfa_settings_page() {
         ?>
 
 		<h2 class="nav-tab-wrapper">
-			<a href="#access-defaults" class="nav-tab nav-tab-active"><?php _e( 'Access Defaults', 'secure-file-access' ); ?></a>
-			<a href="#error-messages" class="nav-tab"><?php _e( 'Error Messages', 'secure-file-access' ); ?></a>
+			<a href="#access-defaults" class="nav-tab nav-tab-active"><?php esc_html_e( 'Access Defaults', 'secure-file-access' ); ?></a>
+    		<a href="#error-messages" class="nav-tab"><?php esc_html_e( 'Error Messages', 'secure-file-access' ); ?></a>
 		</h2>
 
         <form method="post">
@@ -143,7 +143,7 @@ function sfa_settings_page() {
                         <th scope="row"><?php echo esc_html__( 'Default Subscription IDs', 'secure-file-access' ); ?></th>
                         <td>
                             <input type="text" name="sfa_default_subscription_ids" value="<?php echo esc_attr( $default_subscription_ids ); ?>" class="regular-text" style="width:100%;">
-                            <p class="description"><?php echo esc_html__( 'Comma-separated WooCommerce subscription IDs. Leave empty to rely on roles only.', 'secure-file-access' ); ?></p>
+                            <p class="description"><?php echo esc_html__( 'Comma-separated WooCommerce subscription product IDs. Leave empty to rely on roles only.', 'secure-file-access' ); ?></p>
                         </td>
                     </tr>
                     <tr>
@@ -239,7 +239,7 @@ add_shortcode( 'file_access', function( $atts ) {
     // messages (plain text defaults)
     $message_no_access = get_option( 'sfa_message_no_access', __( 'You do not have access to this file.', 'secure-file-access' ) );
     $message_invalid_url = get_option( 'sfa_message_invalid_url', __( 'Invalid file URL provided.', 'secure-file-access' ) );
-    $message_not_logged_in = get_option( 'sfa_message_not_logged_in', __( 'Please login to access this file.', 'secure-file-access' ) );
+    $message_not_logged_in = get_option( 'sfa_message_not_logged_in', __( 'Please log in to access this file.', 'secure-file-access' ) );
 
     // shortcode atts
     $atts = shortcode_atts(
@@ -253,8 +253,8 @@ add_shortcode( 'file_access', function( $atts ) {
         'file_access'
     );
 
-    $url = esc_url( $atts['url'] );
-    $label = esc_html( $atts['label'] );
+    $url = $atts['url'];
+    $label = $atts['label'];
 
 	// require url (use simple classes)
 	if ( empty( $url ) ) {
