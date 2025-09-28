@@ -6,12 +6,14 @@ Description: Easy file downloads for WordPress
 Version: 1.0.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
+Requires PHP: 7.0
+Tested up to: 6.8
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
+Update URI: false
 GitHub Plugin URI: littlebizzy/secure-file-access
 Primary Branch: master
 Text Domain: secure-file-access
-Domain Path: /languages
 */
 
 // prevent direct access
@@ -24,11 +26,6 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
 	$overrides[] = 'secure-file-access/secure-file-access.php';
 	return $overrides;
 }, 999 );
-
-// load text domain
-add_action( 'plugins_loaded', function() {
-	load_plugin_textdomain( 'secure-file-access', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
-} );
 
 // register settings page
 add_action( 'admin_menu', function() {
