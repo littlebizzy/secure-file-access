@@ -113,9 +113,9 @@ function sfa_settings_page() {
 	// load settings (plain text defaults)
 	$message_no_access = get_option( 'sfa_message_no_access', __( 'You do not have access to this file.', 'secure-file-access' ) );
 	$message_invalid_url = get_option( 'sfa_message_invalid_url', __( 'Invalid file URL provided.', 'secure-file-access' ) );
-	$message_not_logged_in = get_option( 'sfa_message_not_logged_in', __( 'Please log in to access this file.', 'secure-file-access' ) );
+	$message_not_logged_in = get_option( 'sfa_message_not_logged_in', __( 'Please login to access this file.', 'secure-file-access' ) );
 	$default_subscription_ids = get_option( 'sfa_default_subscription_ids', '' );
-	$default_roles = get_option( 'sfa_default_roles', 'administrator' );
+	$default_roles = get_option( 'sfa_default_roles', '' );
 	$default_label = get_option( 'sfa_default_label', __( 'Download File', 'secure-file-access' ) );
 	?>
     <div class="wrap" id="sfa-settings">
@@ -146,7 +146,7 @@ function sfa_settings_page() {
                         <th scope="row"><?php echo esc_html__( 'Default Subscription IDs', 'secure-file-access' ); ?></th>
                         <td>
                             <input type="text" name="sfa_default_subscription_ids" value="<?php echo esc_attr( $default_subscription_ids ); ?>" class="regular-text" style="width:100%;">
-                            <p class="description"><?php echo esc_html__( 'Comma-separated subscription product IDs. Leave empty to rely on roles only.', 'secure-file-access' ); ?></p>
+                            <p class="description"><?php echo esc_html__( 'Comma-separated WooCommerce subscription IDs. Leave empty to rely on roles only.', 'secure-file-access' ); ?></p>
                         </td>
                     </tr>
                     <tr>
@@ -173,7 +173,7 @@ function sfa_settings_page() {
                         <th scope="row"><?php echo esc_html__( 'Message: No Access', 'secure-file-access' ); ?></th>
                         <td>
                             <input type="text" name="sfa_message_no_access" value="<?php echo esc_attr( $message_no_access ); ?>" class="regular-text" style="width:100%;">
-                            <p class="description"><?php echo esc_html__( 'Shown when a logged-in user does not meet the required role or subscription.', 'secure-file-access' ); ?></p>
+                            <p class="description"><?php echo esc_html__( 'Shown when a logged-in user does not meet the required role or WooCommerce subscription.', 'secure-file-access' ); ?></p>
                         </td>
                     </tr>
                     <tr>
