@@ -110,7 +110,7 @@ function sfa_settings_page() {
 	// load settings (plain text defaults)
 	$message_no_access = get_option( 'sfa_message_no_access', __( 'You do not have access to this file.', 'secure-file-access' ) );
 	$message_invalid_url = get_option( 'sfa_message_invalid_url', __( 'Invalid file URL provided.', 'secure-file-access' ) );
-	$message_not_logged_in = get_option( 'sfa_message_not_logged_in', __( 'Please login to access this file.', 'secure-file-access' ) );
+	$message_not_logged_in = get_option( 'sfa_message_not_logged_in', __( 'Please log in to access this file.', 'secure-file-access' ) );
 	$default_subscription_ids = get_option( 'sfa_default_subscription_ids', '' );
 	$default_roles = get_option( 'sfa_default_roles', '' );
 	$default_label = get_option( 'sfa_default_label', __( 'Download File', 'secure-file-access' ) );
@@ -261,7 +261,7 @@ add_shortcode( 'file_access', function( $atts ) {
     	return '<div class="sfa-wrapper sfa-invalid-url" role="alert"><span class="sfa-message">' . esc_html( $message_invalid_url ) . '</span></div>';
 	}
 
-	// require login (use simple classes)
+	// require log in (use simple classes)
 	if ( ! is_user_logged_in() ) {
     	return '<div class="sfa-wrapper sfa-not-logged-in" role="alert"><span class="sfa-message">' . esc_html( $message_not_logged_in ) . '</span></div>';
 	}
