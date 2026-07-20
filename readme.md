@@ -2,9 +2,13 @@
 
 Easy file downloads for WordPress with role and WooCommerce subscription-based access control.
 
-## Usage
+## Description
 
-Configure default subscription product IDs, WordPress roles, the download button label, and error messages under **Settings > Secure File Access**.
+Secure File Access creates protected download links using the `[file_access]` shortcode. Visitors must be logged in, administrators always have access, and other users receive access when they match any configured WordPress role or have an active or pending-cancel WooCommerce subscription for any configured product ID.
+
+Default subscription product IDs, WordPress roles, the download button label, and frontend error messages can be configured under **Settings > Secure File Access**. Shortcode `roles` and `subscriptions` values override their corresponding defaults for individual downloads.
+
+WooCommerce Subscriptions is optional. When it is not active, only role-based access is available. If no roles or subscription product IDs are configured, only administrators receive access. File URLs are sanitized and unsupported protocols are rejected before download links are rendered.
 
 Basic usage:
 
@@ -17,17 +21,6 @@ Override the configured defaults for a specific download:
 ```text
 [file_access url="https://example.com/plugin.zip" label="Download Plugin" subscriptions="123,456" roles="customer,shop_manager"]
 ```
-
-Visitors must be logged in. Administrators always have access. Other users receive access when they match any listed role or have an active or pending-cancel WooCommerce subscription for any listed product ID. Shortcode `roles` and `subscriptions` values override their corresponding defaults.
-
-WooCommerce Subscriptions is optional. When it is not active, only role-based access is available. If no roles or subscription product IDs are configured, only administrators receive access.
-
-## Compatibility
-
-- tested up to WordPress 7.0
-- supports PHP 7.0 to 8.4
-- supports Multisite
-- supports Git Updater
 
 ## Changelog
 
