@@ -77,7 +77,7 @@ function sfa_settings_page() {
 
         // normalize roles split on commas only
         $roles_input = '';
-        if ( isset( $_POST['sfa_default_roles'] ) ) {
+        if ( isset( $_POST['sfa_default_roles'] ) && is_string( $_POST['sfa_default_roles'] ) ) {
             $roles_input = wp_unslash( $_POST['sfa_default_roles'] );
         }
         $roles_parts = explode( ',', $roles_input );
@@ -88,7 +88,7 @@ function sfa_settings_page() {
 
         // normalize subscription ids split on commas only
         $subs_input = '';
-        if ( isset( $_POST['sfa_default_subscription_ids'] ) ) {
+        if ( isset( $_POST['sfa_default_subscription_ids'] ) && is_string( $_POST['sfa_default_subscription_ids'] ) ) {
             $subs_input = wp_unslash( $_POST['sfa_default_subscription_ids'] );
         }
         $subs_parts = explode( ',', $subs_input );
@@ -246,12 +246,12 @@ add_shortcode( 'file_access', function( $atts ) {
 
     // shortcode atts
     $atts = shortcode_atts(
-        [
+        array(
             'url' => '',
             'label' => $default_label,
             'subscriptions' => '',
             'roles' => '',
-        ],
+        ),
         $atts,
         'file_access'
     );
@@ -271,55 +271,30 @@ add_shortcode( 'file_access', function( $atts ) {
 
     // user context
     $user_id = get_current_user_id();
-    $user = wp_get_current_user();
 
     // compute rules
 	// split on commas only to avoid mid-word splits
-	$roles = $atts['roles'] ? $atts['roles'] : implode( ',', $default_roles );
+	$roles = implode( ',', $default_roles );
+	if ( ! empty( $atts['roles'] ) ) {
+		$roles = $atts['roles'];
+	}
 	$roles = explode( ',', $roles );
 	$roles = array_map( 'trim', $roles );
 	$roles = array_map( 'sanitize_key', $roles );
 	$roles = array_values( array_unique( array_filter( $roles ) ) );
 
     // split on commas only and keep digits for ids
-    $subscriptions = $atts['subscriptions'] ? $atts['subscriptions'] : $default_sub_ids;
+    $subscriptions = $default_sub_ids;
+    if ( ! empty( $atts['subscriptions'] ) ) {
+        $subscriptions = $atts['subscriptions'];
+    }
     $subscriptions = explode( ',', $subscriptions );
     $subscriptions = array_map( 'trim', $subscriptions );
     $subscriptions = array_map( function( $v ) { return preg_replace( '/\D+/', '', $v ); }, $subscriptions );
     $subscriptions = array_values( array_unique( array_filter( $subscriptions ) ) );
 
-    $has_access = false;
-
-	// admin bypass
-    if ( user_can( $user_id, 'manage_options' ) ) {
-        $has_access = true;
-    }
-
-    // role check
-    $user_roles_sanitized = array_map( 'sanitize_key', (array) $user->roles );
-	if ( array_intersect( $roles, $user_roles_sanitized ) ) {
-    	$has_access = true;
-	}
-
-    // subscription check
-    if ( ! $has_access && function_exists( 'wcs_user_has_subscription' ) ) {
-        foreach ( $subscriptions as $sub_id ) {
-            $sub_id = absint( $sub_id );
-            if (
-                $sub_id &&
-                (
-                    wcs_user_has_subscription( $user_id, $sub_id, 'active' ) ||
-                    wcs_user_has_subscription( $user_id, $sub_id, 'pending-cancel' )
-                )
-            ) {
-                $has_access = true;
-                break;
-            }
-        }
-    }
-
     // render
-    if ( $has_access ) {
+    if ( sfa_protected_download_user_has_access( $user_id, $roles, $subscriptions ) ) {
         $download_url = sfa_create_protected_download_url( $url, $user_id, $roles, $subscriptions );
 
         if ( empty( $download_url ) ) {
