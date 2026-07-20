@@ -253,10 +253,10 @@ add_shortcode( 'file_access', function( $atts ) {
         'file_access'
     );
 
-    $url = $atts['url'];
+    $url = esc_url_raw( $atts['url'], array( 'http', 'https' ) );
     $label = $atts['label'];
 
-	// require url (use simple classes)
+	// require valid url (use simple classes)
 	if ( empty( $url ) ) {
     	return '<div class="sfa-wrapper sfa-invalid-url" role="alert"><span class="sfa-message">' . esc_html( $message_invalid_url ) . '</span></div>';
 	}
