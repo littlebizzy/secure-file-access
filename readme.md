@@ -12,6 +12,8 @@ WooCommerce Subscriptions is optional. When it is not active, only role-based ac
 
 Authorized downloads use a short-lived local `?download=` link instead of placing the destination URL in the page HTML. Each link is tied to the current user, expires after 15 minutes, rechecks access when requested, and becomes invalid after a successful redirect. Protected download responses are marked private and non-cacheable and do not forward referrer information.
 
+The **GitHub Access** tab stores one personal access token per WordPress site for future private repository downloads. The token is stored in the non-autoloaded `sfa_github_token` option, is never displayed after saving, and can be replaced or removed by an administrator. Version 1.3.0 does not yet make GitHub API requests or change shortcode download behavior.
+
 Basic usage:
 
 ```text
@@ -25,6 +27,12 @@ Override the configured defaults for a specific download:
 ```
 
 ## Changelog
+
+### 1.3.0
+- adds a GitHub Access settings tab for one personal access token per WordPress site
+- stores the token in the non-autoloaded `sfa_github_token` option without displaying the saved value
+- preserves the configured token when the password field is blank and supports explicit replacement or removal
+- prepares credential storage for future private repository downloads without making GitHub API requests
 
 ### 1.2.0
 - replaces destination URLs in rendered shortcode HTML with 64-character, user-bound transient download tokens
