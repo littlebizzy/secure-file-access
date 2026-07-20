@@ -121,6 +121,10 @@ function sfa_handle_protected_download() {
 		return;
 	}
 
+	if ( ! is_string( $_GET['download'] ) ) {
+		return;
+	}
+
 	$token = sanitize_text_field( wp_unslash( $_GET['download'] ) );
 
 	// ignore unrelated download query parameters
@@ -138,7 +142,7 @@ function sfa_handle_protected_download() {
 		! isset( $download['roles'] ) ||
 		! isset( $download['subscriptions'] ) ||
 		! isset( $download['expires_at'] ) ||
-		time() > absint( $download['expires_at'] )
+		time() >= absint( $download['expires_at'] )
 	) {
 		delete_transient( $transient_key );
 		sfa_stop_protected_download( __( 'This download link is invalid or has expired.', 'secure-file-access' ) );
