@@ -10,6 +10,8 @@ Default subscription product IDs, WordPress roles, the download button label, an
 
 WooCommerce Subscriptions is optional. When it is not active, only role-based access is available. If no roles or subscription product IDs are configured, only administrators receive access. File URLs are sanitized and unsupported protocols are rejected before download links are rendered.
 
+Authorized downloads use a short-lived local `?download=` link instead of placing the destination URL in the page HTML. Each link is tied to the current user, expires after 15 minutes, rechecks access when requested, and becomes invalid after a successful redirect. Protected download responses are marked private and non-cacheable and do not forward referrer information.
+
 Basic usage:
 
 ```text
@@ -23,6 +25,12 @@ Override the configured defaults for a specific download:
 ```
 
 ## Changelog
+
+### 1.2.0
+- replaces exposed file URLs with short-lived protected download links
+- rechecks login, role, and WooCommerce subscription access when downloads are requested
+- prevents protected download responses from being cached or forwarded through referrer headers
+- preserves the existing shortcode attributes and direct URL configuration
 
 ### 1.1.0
 - preserves access for pending-cancel WooCommerce subscriptions until the prepaid term ends
