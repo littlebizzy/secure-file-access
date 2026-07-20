@@ -3,7 +3,7 @@
 Plugin Name: Secure File Access
 Plugin URI: https://www.littlebizzy.com/plugins/secure-file-access
 Description: Easy file downloads for WordPress
-Version: 1.2.0
+Version: 1.3.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 Requires PHP: 7.0
@@ -46,6 +46,12 @@ function sfa_settings_page() {
     // ensure capability
     if ( ! current_user_can( 'manage_options' ) ) {
         return;
+    }
+
+    // remove github token
+    if ( isset( $_POST['sfa_remove_github_token'] ) && check_admin_referer( 'sfa_save_settings', 'sfa_nonce' ) ) {
+        delete_option( 'sfa_github_token' );
+        echo '<div class="notice notice-success is-dismissible"><p><strong>' . esc_html__( 'GitHub token removed successfully.', 'secure-file-access' ) . '</strong></p></div>';
     }
 
     // save settings
@@ -98,6 +104,13 @@ function sfa_settings_page() {
         $subs_parts = array_values( array_unique( array_filter( $subs_parts ) ) );
         $subs_string = implode( ',', $subs_parts );
 
+        // sanitize github token
+        $github_token = '';
+        if ( isset( $_POST['sfa_github_token'] ) && is_string( $_POST['sfa_github_token'] ) ) {
+            $github_token = sanitize_text_field( wp_unslash( $_POST['sfa_github_token'] ) );
+            $github_token = trim( $github_token );
+        }
+
         // persist
         update_option( 'sfa_message_no_access', $message_no_access );
         update_option( 'sfa_message_invalid_url', $message_invalid_url );
@@ -105,6 +118,15 @@ function sfa_settings_page() {
         update_option( 'sfa_default_subscription_ids', $subs_string );
         update_option( 'sfa_default_roles', $roles_string );
         update_option( 'sfa_default_label', $default_label );
+
+        // save github token only when a new value is submitted
+        if ( ! empty( $github_token ) ) {
+            if ( false === get_option( 'sfa_github_token', false ) ) {
+                add_option( 'sfa_github_token', $github_token, '', false );
+            } else {
+                update_option( 'sfa_github_token', $github_token, false );
+            }
+        }
 
         // admin notice
         echo '<div class="notice notice-success is-dismissible"><p><strong>' . esc_html__( 'Settings saved successfully.', 'secure-file-access' ) . '</strong></p></div>';
@@ -117,6 +139,10 @@ function sfa_settings_page() {
 	$default_subscription_ids = get_option( 'sfa_default_subscription_ids', '' );
 	$default_roles = get_option( 'sfa_default_roles', '' );
 	$default_label = get_option( 'sfa_default_label', __( 'Download File', 'secure-file-access' ) );
+    $github_token_configured = false;
+    if ( false !== get_option( 'sfa_github_token', false ) ) {
+        $github_token_configured = true;
+    }
 	?>
     <div class="wrap" id="sfa-settings">
         <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
@@ -134,6 +160,7 @@ function sfa_settings_page() {
 		<h2 class="nav-tab-wrapper">
 			<a href="#access-defaults" class="nav-tab nav-tab-active"><?php esc_html_e( 'Access Defaults', 'secure-file-access' ); ?></a>
     		<a href="#error-messages" class="nav-tab"><?php esc_html_e( 'Error Messages', 'secure-file-access' ); ?></a>
+            <a href="#github-access" class="nav-tab"><?php esc_html_e( 'GitHub Access', 'secure-file-access' ); ?></a>
 		</h2>
 
         <form method="post">
@@ -188,6 +215,28 @@ function sfa_settings_page() {
                         <td>
                             <input type="text" name="sfa_message_not_logged_in" value="<?php echo esc_attr( $message_not_logged_in ); ?>" class="regular-text" style="width:100%;">
                             <p class="description"><?php echo esc_html__( 'Shown when a visitor is not logged in but tries to access a protected file.', 'secure-file-access' ); ?></p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div id="github-access" class="tab-content" style="display: none;">
+                <h3><?php echo esc_html__( 'GitHub Access', 'secure-file-access' ); ?></h3>
+                <p><?php echo esc_html__( 'Configure one GitHub personal access token for this WordPress site. The token is reserved for future private repository downloads.', 'secure-file-access' ); ?></p>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><?php echo esc_html__( 'Personal Access Token', 'secure-file-access' ); ?></th>
+                        <td>
+                            <input type="password" name="sfa_github_token" value="" class="regular-text" style="width:100%;" autocomplete="new-password" spellcheck="false">
+                            <p class="description"><?php echo esc_html__( 'Enter a fine-grained or classic token. Leave blank to keep the configured token. Read-only repository access is sufficient.', 'secure-file-access' ); ?></p>
+                            <?php
+                            if ( $github_token_configured ) {
+                                echo '<p><strong>' . esc_html__( 'Token configured.', 'secure-file-access' ) . '</strong></p>';
+                                echo '<button type="submit" name="sfa_remove_github_token" value="1" class="button button-secondary">' . esc_html__( 'Remove Token', 'secure-file-access' ) . '</button>';
+                            } else {
+                                echo '<p><strong>' . esc_html__( 'No token configured.', 'secure-file-access' ) . '</strong></p>';
+                            }
+                            ?>
                         </td>
                     </tr>
                 </table>
