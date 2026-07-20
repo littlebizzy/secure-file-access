@@ -33,8 +33,8 @@ WooCommerce Subscriptions is optional. When it is not active, only role-based ac
 
 ### 1.1.0
 - preserves access for pending-cancel WooCommerce subscriptions until the prepaid term ends
-- validates file URLs before rendering download links
-- adds shortcode usage and compatibility documentation
+- sanitizes file URLs and rejects unsupported protocols before rendering download links
+- `Tested up to:` bumped to 7.0
 
 ### 1.0.0
 - supports shortcode `[file_access]` for secure file download links with role and WooCommerce subscription-based access control
