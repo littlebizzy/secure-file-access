@@ -3,11 +3,11 @@
 Plugin Name: Secure File Access
 Plugin URI: https://www.littlebizzy.com/plugins/secure-file-access
 Description: Easy file downloads for WordPress
-Version: 1.0.0
+Version: 1.1.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 Requires PHP: 7.0
-Tested up to: 6.8
+Tested up to: 7.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Update URI: false
