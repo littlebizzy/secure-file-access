@@ -31,7 +31,7 @@ Override the configured defaults for a specific download:
 ### 1.3.0
 - adds a GitHub Access settings tab for one personal access token per WordPress site
 - stores the token in the non-autoloaded `sfa_github_token` option without displaying the saved value
-- preserves the configured token when the password field is blank and supports explicit replacement or removal
+- preserves the configured token when the masked token field is blank and supports explicit replacement or removal
 - prepares credential storage for future private repository downloads without making GitHub API requests
 
 ### 1.2.0
