@@ -21,6 +21,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// load protected download handling
+require_once __DIR__ . '/protected-downloads.php';
+
 // disable wordpress.org updates for this plugin
 add_filter( 'gu_override_dot_org', function( $overrides ) {
 	$overrides[] = 'secure-file-access/secure-file-access.php';
@@ -317,9 +320,15 @@ add_shortcode( 'file_access', function( $atts ) {
 
     // render
     if ( $has_access ) {
+        $download_url = sfa_create_protected_download_url( $url, $user_id, $roles, $subscriptions );
+
+        if ( empty( $download_url ) ) {
+            return '<div class="sfa-wrapper sfa-invalid-url" role="alert"><span class="sfa-message">' . esc_html( $message_invalid_url ) . '</span></div>';
+        }
+
         return sprintf(
             '<div class="sfa-wrapper"><a class="sfa-link" href="%s"><span class="sfa-label">%s</span></a></div>',
-            esc_url( $url ),
+            esc_url( $download_url ),
             esc_html( $label )
         );
     }
