@@ -302,7 +302,13 @@ add_shortcode( 'file_access', function( $atts ) {
     if ( ! $has_access && function_exists( 'wcs_user_has_subscription' ) ) {
         foreach ( $subscriptions as $sub_id ) {
             $sub_id = absint( $sub_id );
-            if ( $sub_id && wcs_user_has_subscription( $user_id, $sub_id, 'active' ) ) {
+            if (
+                $sub_id &&
+                (
+                    wcs_user_has_subscription( $user_id, $sub_id, 'active' ) ||
+                    wcs_user_has_subscription( $user_id, $sub_id, 'pending-cancel' )
+                )
+            ) {
                 $has_access = true;
                 break;
             }
