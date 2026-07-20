@@ -1,6 +1,6 @@
 # Secure File Access
 
-Easy file downloads for WordPress with role and WooCommerce subscription-based access control.
+Easy file downloads for WordPress
 
 ## Description
 
