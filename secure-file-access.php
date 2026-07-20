@@ -326,5 +326,3 @@ add_shortcode( 'file_access', function( $atts ) {
 
     return '<div class="sfa-wrapper sfa-no-access" role="alert"><span class="sfa-message">' . esc_html( $message_no_access ) . '</span></div>';
 } );
-
-// Ref: ChatGPT
