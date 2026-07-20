@@ -27,10 +27,10 @@ Override the configured defaults for a specific download:
 ## Changelog
 
 ### 1.2.0
-- replaces exposed file URLs with short-lived protected download links
-- rechecks login, role, and WooCommerce subscription access when downloads are requested
-- prevents protected download responses from being cached or forwarded through referrer headers
-- preserves the existing shortcode attributes and direct URL configuration
+- replaces destination URLs in rendered shortcode HTML with 64-character, user-bound transient download tokens
+- expires protected download links after 15 minutes and invalidates them after a successful redirect
+- rechecks login, administrator capability, configured roles, and active or pending-cancel WooCommerce subscriptions when each download is requested
+- sends private no-store cache headers and a no-referrer policy before redirecting to the sanitized HTTP or HTTPS destination
 
 ### 1.1.0
 - preserves access for pending-cancel WooCommerce subscriptions until the prepaid term ends
