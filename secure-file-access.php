@@ -49,7 +49,7 @@ function sfa_settings_page() {
     }
 
     // remove github token
-    if ( isset( $_POST['sfa_remove_github_token'] ) && check_admin_referer( 'sfa_save_settings', 'sfa_nonce' ) ) {
+    if ( isset( $_POST['sfa_remove_github_token'] ) && check_admin_referer( 'sfa_remove_github_token', 'sfa_remove_nonce' ) ) {
         delete_option( 'sfa_github_token' );
         echo '<div class="notice notice-success is-dismissible"><p><strong>' . esc_html__( 'GitHub token removed successfully.', 'secure-file-access' ) . '</strong></p></div>';
     }
@@ -232,7 +232,7 @@ function sfa_settings_page() {
                             <?php
                             if ( $github_token_configured ) {
                                 echo '<p><strong>' . esc_html__( 'Token configured.', 'secure-file-access' ) . '</strong></p>';
-                                echo '<button type="submit" name="sfa_remove_github_token" value="1" class="button button-secondary">' . esc_html__( 'Remove Token', 'secure-file-access' ) . '</button>';
+                                echo '<button type="submit" form="sfa-remove-github-token-form" class="button button-secondary">' . esc_html__( 'Remove Token', 'secure-file-access' ) . '</button>';
                             } else {
                                 echo '<p><strong>' . esc_html__( 'No token configured.', 'secure-file-access' ) . '</strong></p>';
                             }
@@ -245,6 +245,11 @@ function sfa_settings_page() {
             <p class="submit">
                 <input type="submit" name="sfa_save_settings" class="button button-primary" value="<?php echo esc_attr__( 'Save Changes', 'secure-file-access' ); ?>">
             </p>
+        </form>
+
+        <form method="post" id="sfa-remove-github-token-form">
+            <?php wp_nonce_field( 'sfa_remove_github_token', 'sfa_remove_nonce' ); ?>
+            <input type="hidden" name="sfa_remove_github_token" value="1">
         </form>
 	</div>
 
