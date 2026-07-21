@@ -3,7 +3,7 @@
 Plugin Name: Secure File Access
 Plugin URI: https://www.littlebizzy.com/plugins/secure-file-access
 Description: Easy file downloads for WordPress
-Version: 1.3.0
+Version: 1.3.1
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 Requires PHP: 7.0
