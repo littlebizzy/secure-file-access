@@ -70,3 +70,5 @@ The destination URL is not placed directly in the page HTML. Authorized users re
 - uses private, non-cacheable responses without forwarding referrer information
 
 Only HTTP and HTTPS destination URLs are accepted.
+
+See [Downloads](downloads.md) for the complete download flow and [Settings](settings.md) for saved defaults and error messages.
