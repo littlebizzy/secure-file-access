@@ -35,10 +35,9 @@ Override the configured defaults for a specific download:
 ## Changelog
 
 ### 1.3.1
-- removes the stored GitHub personal access token when the plugin is deleted
-- applies token cleanup to every site on Multisite while preserving all other settings
-- adds focused documentation for downloads, settings, and shortcode usage
-- renames the internal download handler to `downloads.php` without changing download behavior
+- adds root-level `uninstall.php` to delete the per-site `sfa_github_token` option when the plugin is deleted, including every site on Multisite, while preserving all other plugin options
+- adds `docs/downloads.md`, `docs/settings.md`, and `docs/shortcode.md`, with links from `readme.md`
+- renames `protected-downloads.php` to `downloads.php` and updates the loader path in `secure-file-access.php` without changing runtime download behavior
 
 ### 1.3.0
 - adds a GitHub Access settings tab for one personal access token per WordPress site
