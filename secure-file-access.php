@@ -21,8 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// load protected download handling
-require_once __DIR__ . '/protected-downloads.php';
+// load download handling
+require_once __DIR__ . '/downloads.php';
 
 // disable wordpress.org updates for this plugin
 add_filter( 'gu_override_dot_org', function( $overrides ) {
