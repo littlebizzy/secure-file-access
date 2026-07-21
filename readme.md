@@ -36,7 +36,6 @@ Override the configured defaults for a specific download:
 
 ### 1.3.1
 - adds root-level `uninstall.php` to delete the per-site `sfa_github_token` option when the plugin is deleted, including every site on Multisite, while preserving all other plugin options
-- adds `docs/downloads.md`, `docs/settings.md`, and `docs/shortcode.md`, with links from `readme.md`
 - renames `protected-downloads.php` to `downloads.php` and updates the loader path in `secure-file-access.php` without changing runtime download behavior
 
 ### 1.3.0
