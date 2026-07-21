@@ -111,3 +111,5 @@ Settings are stored separately for each WordPress site.
 Deleting the plugin removes the stored GitHub personal access token from every site in a Multisite network. Other saved settings are preserved for possible reinstallation.
 
 Normal plugin deactivation does not delete any settings.
+
+See [Downloads](downloads.md) for the protected-link flow and download behavior.
