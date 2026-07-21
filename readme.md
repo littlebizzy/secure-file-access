@@ -26,6 +26,12 @@ Override the configured defaults for a specific download:
 [file_access url="https://example.com/plugin.zip" label="Download Plugin" subscriptions="123,456" roles="customer,shop_manager"]
 ```
 
+## Documentation
+
+- [Downloads](docs/downloads.md)
+- [Settings](docs/settings.md)
+- [Shortcode](docs/shortcode.md)
+
 ## Changelog
 
 ### 1.3.1
