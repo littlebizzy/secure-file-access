@@ -1,20 +1,25 @@
 # Downloads
 
-Secure File Access replaces the destination URL in the page HTML with a short-lived local download link.
+Secure File Access replaces the destination in the page HTML with a short-lived local download link.
 
-The plugin does not host, copy, or proxy the file. After access is confirmed, the visitor is redirected to the configured HTTP or HTTPS destination.
+The plugin supports two download sources:
+
+- a normal HTTP or HTTPS URL
+- a GitHub Release ZIP asset
+
+The plugin does not permanently host or copy either source.
 
 ## How Downloads Work
 
 When an authorized user views a `[file_access]` shortcode, the plugin:
 
-1. confirms that the destination URL is valid
+1. validates the configured download source
 2. checks the user's current access
 3. creates a random 64-character download token
-4. stores the destination and access rules temporarily
+4. stores the source and access rules temporarily
 5. displays a local link containing the token
 
-The original destination URL is not included in the rendered shortcode HTML.
+The original URL, GitHub API URL, and GitHub personal access token are not included in the rendered shortcode HTML.
 
 ## Download Link Lifetime
 
@@ -54,17 +59,45 @@ When WooCommerce Subscriptions is not active, subscription checks are skipped an
 
 If the user's access changes after the page loads, the protected link uses the latest access state when opened.
 
-## Successful Downloads
+## URL Downloads
 
-After all checks pass, the temporary token is deleted and the browser receives a redirect to the destination URL.
+Normal URL downloads accept only HTTP and HTTPS destinations.
 
-This makes the protected link single-use after a successful redirect. The destination server then handles the actual file response, availability, authentication, and transfer.
-
-## URL Requirements
-
-Only HTTP and HTTPS destination URLs are accepted.
+After all checks pass, the temporary token is deleted and the browser receives a redirect to the configured destination. The destination server then handles file availability, authentication, and transfer.
 
 An empty or unsupported URL displays the configured **Invalid File URL** message. The URL is sanitized when the shortcode is rendered and checked again before the redirect.
+
+## GitHub Release Downloads
+
+GitHub downloads use the saved `sfa_github_token` only on the WordPress server.
+
+When the protected link is opened, the plugin:
+
+1. requests the latest published stable GitHub Release, or the exact release supplied by `github_tag`
+2. ignores draft and prerelease releases
+3. finds uploaded ZIP release assets
+4. selects the ZIP automatically when exactly one exists
+5. requires `github_asset` when multiple ZIP assets exist
+6. requests the selected asset through the authenticated GitHub API
+7. redirects the browser to GitHub's temporary download URL
+
+The plugin does not proxy or stream the ZIP through PHP. This avoids PHP memory limits, execution timeouts, and large temporary files.
+
+The GitHub personal access token is never added to the protected link or redirect URL. The final temporary GitHub URL may be visible to the authorized user's browser after the redirect and expires according to GitHub's own handling.
+
+GitHub release metadata is resolved when the protected link is opened. Version 1.4.0 does not cache release or asset metadata.
+
+## GitHub Asset Selection
+
+When `github_tag` is omitted, the repository's latest published stable GitHub Release is used. A Git tag without an associated GitHub Release is not considered.
+
+When `github_asset` is omitted:
+
+- exactly one ZIP asset is selected automatically
+- no ZIP assets produces an error
+- multiple ZIP assets produces an error asking for `github_asset`
+
+When `github_asset` is supplied, its filename must exactly match an uploaded ZIP asset in the selected release.
 
 ## Privacy and Caching
 
@@ -72,12 +105,6 @@ Protected download responses are marked private and non-cacheable.
 
 The plugin also sends a no-referrer policy before redirecting, so the destination should not receive the protected WordPress download URL through the browser's referrer header.
 
-These protections apply to the local protected-link response. The destination server may still receive normal connection information directly from the visitor's browser when the redirect is followed.
+These protections apply to the local protected-link response. The destination server or GitHub still receives normal connection information directly from the visitor's browser when the redirect is followed.
 
-## GitHub Downloads
-
-Version 1.3.1 can store a GitHub personal access token, but the token is reserved for future private repository support.
-
-Current shortcode downloads do not use the GitHub API or the saved GitHub token.
-
-See [Shortcode](shortcode.md) for usage examples and [Settings](settings.md) for access defaults and error messages.
+See [Shortcode](shortcode.md) for usage examples and [Settings](settings.md) for access defaults, error messages, and GitHub token configuration.
