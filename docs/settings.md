@@ -74,13 +74,15 @@ Default:
 Please log in to access this file.
 ```
 
-GitHub-specific source, release, and asset errors use built-in translated messages and are not configurable in version 1.4.0.
+GitHub-specific source, token, access, rate-limit, release, and asset errors use built-in translated messages and are not configurable in version 1.4.1.
 
 ## GitHub Access
 
 The GitHub Access tab stores one personal access token for the current WordPress site. The token is used for authenticated GitHub Release downloads, including private repositories.
 
-A fine-grained personal access token should have **Contents: Read-only** permission for every repository used by a shortcode. A classic personal access token must likewise be able to read the selected private repositories.
+A fine-grained personal access token is preferred. Give it access only to repositories used by the shortcodes and grant **Contents: Read-only** permission.
+
+A classic personal access token generally requires the broader `repo` scope to read private repositories. Organization policies, approval requirements, or SSO authorization can still prevent a valid token from accessing a repository.
 
 The saved token is never displayed again. The settings page only shows whether a token is configured.
 
