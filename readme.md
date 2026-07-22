@@ -4,26 +4,34 @@ Easy file downloads for WordPress
 
 ## Description
 
-Secure File Access creates protected download links using the `[file_access]` shortcode. Visitors must be logged in, administrators always have access, and other users receive access when they match any configured WordPress role or have an active or pending-cancel WooCommerce subscription for any configured product ID.
+Secure File Access creates protected download links using the `[file_access]` shortcode. Downloads can use a normal HTTP or HTTPS URL or a ZIP asset from a public or private GitHub Release.
+
+Visitors must be logged in, administrators always have access, and other users receive access when they match any configured WordPress role or have an active or pending-cancel WooCommerce subscription for any configured product ID.
 
 Default subscription product IDs, WordPress roles, the download button label, and frontend error messages can be configured under **Settings > Secure File Access**. Shortcode `roles` and `subscriptions` values override their corresponding defaults for individual downloads.
 
-WooCommerce Subscriptions is optional. When it is not active, only role-based access is available. If no roles or subscription product IDs are configured, only administrators receive access. File URLs are sanitized and unsupported protocols are rejected before download links are rendered.
+WooCommerce Subscriptions is optional. When it is not active, only role-based access is available. If no roles or subscription product IDs are configured, only administrators receive access. Normal file URLs are sanitized and unsupported protocols are rejected before download links are rendered.
 
-Authorized downloads use a short-lived local `?download=` link instead of placing the destination URL in the page HTML. Each link is tied to the current user, expires after 15 minutes, rechecks access when requested, and becomes invalid after a successful redirect. Protected download responses are marked private and non-cacheable and do not forward referrer information.
+Authorized downloads use a short-lived local `?download=` link instead of placing the destination URL or GitHub token in the page HTML. Each link is tied to the current user, expires after 15 minutes, rechecks access when requested, and becomes invalid after a successful redirect. Protected download responses are marked private and non-cacheable and do not forward referrer information.
 
-The **GitHub Access** tab stores one personal access token per WordPress site for future private repository downloads. The token is stored in the non-autoloaded `sfa_github_token` option, is never displayed after saving, and can be replaced or removed by an administrator. Version 1.3.1 does not yet make GitHub API requests or change shortcode download behavior.
+The **GitHub Access** tab stores one personal access token per WordPress site. GitHub shortcodes use the latest published stable release by default, can optionally pin an exact release tag or ZIP asset, and resolve the authenticated asset to a temporary GitHub download URL without proxying the file through PHP.
 
-Basic usage:
+Normal URL usage:
 
 ```text
 [file_access url="https://example.com/plugin.zip"]
 ```
 
-Override the configured defaults for a specific download:
+Latest stable GitHub Release:
 
 ```text
-[file_access url="https://example.com/plugin.zip" label="Download Plugin" subscriptions="123,456" roles="customer,shop_manager"]
+[file_access github_repo="littlebizzy/private-plugin"]
+```
+
+Override the configured access defaults and GitHub release selection:
+
+```text
+[file_access github_repo="littlebizzy/private-plugin" github_tag="v1.4.0" github_asset="private-plugin.zip" label="Download Plugin" subscriptions="123,456" roles="customer,shop_manager"]
 ```
 
 ## Documentation
@@ -33,6 +41,12 @@ Override the configured defaults for a specific download:
 - [Shortcode](docs/shortcode.md)
 
 ## Changelog
+
+### 1.4.0
+- adds `github_repo`, `github_tag`, and `github_asset` source attributes to the existing `[file_access]` shortcode while preserving normal `url` downloads
+- resolves the latest published stable GitHub Release by default, with optional exact stable release tags
+- automatically selects a single uploaded ZIP asset and requires an exact `github_asset` filename when multiple ZIP assets exist
+- uses the saved `sfa_github_token` only in server-side GitHub API requests and redirects authorized users to GitHub's temporary asset URL without proxying or streaming files through PHP
 
 ### 1.3.1
 - adds root-level `uninstall.php` to delete the per-site `sfa_github_token` option when the plugin is deleted, including every site on Multisite, while preserving all other plugin options
