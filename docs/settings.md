@@ -56,7 +56,7 @@ You do not have access to this file.
 
 ### Message: Invalid File URL
 
-Shown when the shortcode URL is empty or cannot be accepted as an HTTP or HTTPS destination.
+Shown when the shortcode `url` value is empty or cannot be accepted as an HTTP or HTTPS destination.
 
 Default:
 
@@ -74,11 +74,13 @@ Default:
 Please log in to access this file.
 ```
 
+GitHub-specific source, release, and asset errors use built-in translated messages and are not configurable in version 1.4.0.
+
 ## GitHub Access
 
-The GitHub Access tab stores one personal access token for the current WordPress site. The token is reserved for future private repository downloads and is not currently used by the shortcode.
+The GitHub Access tab stores one personal access token for the current WordPress site. The token is used for authenticated GitHub Release downloads, including private repositories.
 
-A fine-grained or classic personal access token can be entered. Read-only repository access is sufficient for the planned download behavior.
+A fine-grained personal access token should have **Contents: Read-only** permission for every repository used by a shortcode. A classic personal access token must likewise be able to read the selected private repositories.
 
 The saved token is never displayed again. The settings page only shows whether a token is configured.
 
@@ -86,7 +88,11 @@ The saved token is never displayed again. The settings page only shows whether a
 - Enter a new token and save to replace it.
 - Use **Remove Token** to delete it explicitly.
 
-The token is stored in the non-autoloaded `sfa_github_token` option.
+The token is stored in the non-autoloaded `sfa_github_token` option and is sent only in server-side requests to `api.github.com`.
+
+Removing the token does not change existing shortcodes, but GitHub downloads will stop with a clear error until another usable token is saved.
+
+See [Shortcode](shortcode.md) for `github_repo`, `github_tag`, and `github_asset` usage.
 
 ## WooCommerce Subscriptions
 
@@ -106,10 +112,10 @@ See [Shortcode](shortcode.md) for the complete attribute reference and examples.
 
 ## Multisite
 
-Settings are stored separately for each WordPress site.
+Settings are stored separately for each WordPress site. Each site can therefore use its own GitHub personal access token.
 
 Deleting the plugin removes the stored GitHub personal access token from every site in a Multisite network. Other saved settings are preserved for possible reinstallation.
 
 Normal plugin deactivation does not delete any settings.
 
-See [Downloads](downloads.md) for the protected-link flow and download behavior.
+See [Downloads](downloads.md) for the protected-link flow and GitHub release behavior.
