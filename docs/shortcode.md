@@ -30,7 +30,7 @@ The visitor must be logged in and have access through an allowed WordPress role,
 | `roles` | No | Comma-separated WordPress role slugs. Overrides the configured default roles. |
 | `subscriptions` | No | Comma-separated WooCommerce subscription product IDs. Overrides the configured default subscription IDs. |
 
-Use either `url` or `github_repo`, not both. GitHub tag and asset attributes require `github_repo`.
+Use either `url` or `github_repo`, not both. If both are supplied, the shortcode rejects the request and displays `Invalid download source provided.` GitHub tag and asset attributes require `github_repo`.
 
 ## GitHub Examples
 
