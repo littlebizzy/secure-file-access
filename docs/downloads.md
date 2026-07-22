@@ -83,11 +83,27 @@ When the protected link is opened, the plugin:
 
 The plugin does not proxy or stream the ZIP through PHP. This avoids PHP memory limits, execution timeouts, and large temporary files.
 
-GitHub's asset API can return either a temporary redirect or the file body directly. Version 1.4.0 requires the temporary redirect and stops with an error rather than downloading a directly streamed asset through WordPress.
+GitHub's asset API can return either a temporary redirect or the file body directly. Secure File Access requires the temporary redirect and stops with an error rather than downloading a directly streamed asset through WordPress.
+
+The temporary redirect must use HTTPS, include a valid host, contain no embedded username or password, and pass WordPress URL safety validation. An invalid redirect is rejected instead of being sent to the browser.
 
 The GitHub personal access token is never added to the protected link or redirect URL. The final temporary GitHub URL may be visible to the authorized user's browser after the redirect and expires according to GitHub's own handling.
 
-GitHub release metadata is resolved when the protected link is opened. Version 1.4.0 does not cache release or asset metadata.
+GitHub release metadata is resolved when the protected link is opened. Version 1.4.1 does not cache release or asset metadata.
+
+## GitHub Errors
+
+GitHub API failures are converted to concise messages without displaying GitHub response bodies or credentials.
+
+Version 1.4.1 distinguishes:
+
+- a rejected token
+- an API rate limit
+- access denied by GitHub
+- a missing or inaccessible repository, release, or asset
+- a temporary GitHub server failure
+
+The plugin does not automatically retry failed GitHub requests. Reloading the WordPress page creates a new protected link when the user still has access.
 
 ## GitHub Asset Selection
 
