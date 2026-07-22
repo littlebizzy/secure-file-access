@@ -222,13 +222,13 @@ function sfa_settings_page() {
 
             <div id="github-access" class="tab-content" style="display: none;">
                 <h3><?php echo esc_html__( 'GitHub Access', 'secure-file-access' ); ?></h3>
-                <p><?php echo esc_html__( 'Configure one GitHub personal access token for this WordPress site. The token is reserved for future private repository downloads.', 'secure-file-access' ); ?></p>
+                <p><?php echo esc_html__( 'Configure one GitHub personal access token for private release downloads from this WordPress site.', 'secure-file-access' ); ?></p>
                 <table class="form-table">
                     <tr>
                         <th scope="row"><?php echo esc_html__( 'Personal Access Token', 'secure-file-access' ); ?></th>
                         <td>
                             <input type="password" name="sfa_github_token" value="" class="regular-text" style="width:100%;" autocomplete="new-password" spellcheck="false">
-                            <p class="description"><?php echo esc_html__( 'Enter a fine-grained or classic token. Leave blank to keep the configured token. Read-only repository access is sufficient.', 'secure-file-access' ); ?></p>
+                            <p class="description"><?php echo esc_html__( 'Enter a fine-grained or classic token. Fine-grained tokens require read-only Contents access. Leave blank to keep the configured token.', 'secure-file-access' ); ?></p>
                             <?php
                             if ( $github_token_configured ) {
                                 echo '<p><strong>' . esc_html__( 'Token configured.', 'secure-file-access' ) . '</strong></p>';
@@ -297,11 +297,15 @@ add_shortcode( 'file_access', function( $atts ) {
     $message_no_access = get_option( 'sfa_message_no_access', __( 'You do not have access to this file.', 'secure-file-access' ) );
     $message_invalid_url = get_option( 'sfa_message_invalid_url', __( 'Invalid file URL provided.', 'secure-file-access' ) );
     $message_not_logged_in = get_option( 'sfa_message_not_logged_in', __( 'Please log in to access this file.', 'secure-file-access' ) );
+    $message_invalid_source = __( 'Invalid download source provided.', 'secure-file-access' );
 
     // shortcode atts
     $atts = shortcode_atts(
         array(
             'url' => '',
+            'github_repo' => '',
+            'github_tag' => '',
+            'github_asset' => '',
             'label' => $default_label,
             'subscriptions' => '',
             'roles' => '',
@@ -310,13 +314,31 @@ add_shortcode( 'file_access', function( $atts ) {
         'file_access'
     );
 
-    $url = esc_url_raw( $atts['url'], array( 'http', 'https' ) );
+    $url_input = trim( $atts['url'] );
+    $url = esc_url_raw( $url_input, array( 'http', 'https' ) );
+    $github_repo_input = trim( $atts['github_repo'] );
+    $github_repo = sfa_sanitize_github_repository( $github_repo_input );
+    $github_tag = trim( sanitize_text_field( $atts['github_tag'] ) );
+    $github_asset = trim( sanitize_text_field( $atts['github_asset'] ) );
     $label = $atts['label'];
 
-	// require valid url (use simple classes)
-	if ( empty( $url ) ) {
-    	return '<div class="sfa-wrapper sfa-invalid-url" role="alert"><span class="sfa-message">' . esc_html( $message_invalid_url ) . '</span></div>';
-	}
+    $github_requested = false;
+    if ( '' !== $github_repo_input || '' !== $github_tag || '' !== $github_asset ) {
+        $github_requested = true;
+    }
+
+    // require exactly one valid download source
+    if ( ( '' !== $url_input && $github_requested ) || ( '' === $url_input && ! $github_requested ) ) {
+        return '<div class="sfa-wrapper sfa-invalid-source" role="alert"><span class="sfa-message">' . esc_html( $message_invalid_source ) . '</span></div>';
+    }
+
+    if ( '' !== $url_input && empty( $url ) ) {
+        return '<div class="sfa-wrapper sfa-invalid-url" role="alert"><span class="sfa-message">' . esc_html( $message_invalid_url ) . '</span></div>';
+    }
+
+    if ( $github_requested && empty( $github_repo ) ) {
+        return '<div class="sfa-wrapper sfa-invalid-source" role="alert"><span class="sfa-message">' . esc_html( $message_invalid_source ) . '</span></div>';
+    }
 
 	// require log in (use simple classes)
 	if ( ! is_user_logged_in() ) {
@@ -349,10 +371,14 @@ add_shortcode( 'file_access', function( $atts ) {
 
     // render
     if ( sfa_protected_download_user_has_access( $user_id, $roles, $subscriptions ) ) {
-        $download_url = sfa_create_protected_download_url( $url, $user_id, $roles, $subscriptions );
+        if ( $github_requested ) {
+            $download_url = sfa_create_protected_github_download_url( $github_repo, $github_tag, $github_asset, $user_id, $roles, $subscriptions );
+        } else {
+            $download_url = sfa_create_protected_download_url( $url, $user_id, $roles, $subscriptions );
+        }
 
         if ( empty( $download_url ) ) {
-            return '<div class="sfa-wrapper sfa-invalid-url" role="alert"><span class="sfa-message">' . esc_html( $message_invalid_url ) . '</span></div>';
+            return '<div class="sfa-wrapper sfa-invalid-source" role="alert"><span class="sfa-message">' . esc_html( $message_invalid_source ) . '</span></div>';
         }
 
         return sprintf(
