@@ -42,6 +42,10 @@ Override the configured access defaults and GitHub release selection:
 
 ## Changelog
 
+### 1.4.1
+- distinguishes rejected tokens, GitHub rate limits, access failures, missing resources, and temporary GitHub server failures without exposing API response bodies
+- validates temporary GitHub asset redirects as safe HTTPS URLs with a valid host and no embedded credentials before redirecting the browser
+
 ### 1.4.0
 - adds `github_repo`, `github_tag`, and `github_asset` source attributes to the existing `[file_access]` shortcode while preserving normal `url` downloads
 - resolves the latest published stable GitHub Release by default, with optional exact stable release tags
