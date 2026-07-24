@@ -51,6 +51,7 @@ Override the configured access defaults and GitHub release selection:
 
 ### 1.5.1
 - adds a direct link from the GitHub Access settings tab to GitHub's personal access token page, opening safely in a new browser tab
+- redirects after saving settings or removing the GitHub token to prevent browser form resubmission prompts while preserving standard WordPress success notices
 
 ### 1.5.0
 - adds WooCommerce product purchase access to URL and GitHub downloads through the `products` shortcode attribute and a Default Product IDs setting
