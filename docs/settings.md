@@ -6,6 +6,20 @@ Only administrators with the `manage_options` capability can view or change thes
 
 ## Access Defaults
 
+### Default Product IDs
+
+Enter one or more WooCommerce product IDs separated by commas.
+
+```text
+123,456
+```
+
+A logged-in user receives access when WooCommerce records that their WordPress account purchased any listed product. WooCommerce decides which order statuses count as paid.
+
+Product checks use the logged-in WordPress user ID only. Guest orders are not matched by billing email.
+
+Leave this setting blank to avoid using purchase-based access by default.
+
 ### Default Subscription IDs
 
 Enter one or more WooCommerce subscription product IDs separated by commas.
@@ -46,7 +60,7 @@ A shortcode can override this value with the `label` attribute.
 
 ### Message: No Access
 
-Shown when a logged-in user does not match an allowed role or eligible WooCommerce subscription.
+Shown when a logged-in user does not match an allowed role, product purchase, or eligible WooCommerce subscription.
 
 Default:
 
@@ -74,7 +88,7 @@ Default:
 Please log in to access this file.
 ```
 
-GitHub-specific source, token, access, rate-limit, release, and asset errors use built-in translated messages and are not configurable in version 1.4.1.
+GitHub-specific source, token, access, rate-limit, release, and asset errors use built-in translated messages and are not configurable in version 1.5.0.
 
 ## GitHub Access
 
@@ -96,19 +110,19 @@ Removing the token does not change existing shortcodes, but GitHub downloads wil
 
 See [Shortcode](shortcode.md) for `github_repo`, `github_tag`, and `github_asset` usage.
 
-## WooCommerce Subscriptions
+## WooCommerce
 
-WooCommerce Subscriptions is optional.
+WooCommerce is optional. When it is not active, product purchase and subscription checks are skipped while role-based and administrator access continue to work.
 
-When it is not active, the settings page displays a warning and subscription checks are skipped. Role-based access and administrator access continue to work normally.
+WooCommerce Subscriptions is also optional. When WooCommerce is active but WooCommerce Subscriptions is not, product purchase checks still work and only subscription checks are skipped.
 
-If neither default roles nor subscription product IDs are configured, only administrators receive access unless a shortcode supplies its own access rules.
+If no default product IDs, roles, or subscription product IDs are configured, only administrators receive access unless a shortcode supplies its own access rules.
 
 ## Shortcode Overrides
 
-The `roles`, `subscriptions`, and `label` shortcode attributes can override their corresponding defaults for an individual download.
+The `products`, `roles`, `subscriptions`, and `label` shortcode attributes can override their corresponding defaults for an individual download.
 
-Shortcode roles and subscription IDs replace the saved defaults for that download. They are not merged with them.
+Shortcode product IDs, roles, and subscription IDs replace the saved defaults for that download. They are not merged with them.
 
 See [Shortcode](shortcode.md) for the complete attribute reference and examples.
 
