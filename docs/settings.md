@@ -2,7 +2,7 @@
 
 Secure File Access settings are available under **Settings > Secure File Access** in the WordPress admin area.
 
-Only administrators with the `manage_options` capability can view or change these settings.
+Only users with the `manage_options` capability can view or change these settings.
 
 ## Access Defaults
 
@@ -42,7 +42,7 @@ customer,shop_manager
 
 A logged-in user receives access when any listed role matches one of their current WordPress roles.
 
-Administrators always have access, even when no role is listed.
+Users with the `manage_options` capability always have access, even when no role is listed.
 
 ### Default Download Button Label
 
@@ -70,13 +70,15 @@ You do not have access to this file.
 
 ### Message: Invalid File URL
 
-Shown when the shortcode `url` value is empty or cannot be accepted as an HTTP or HTTPS destination.
+Shown when a non-empty shortcode `url` value cannot be accepted as an HTTP or HTTPS destination.
 
 Default:
 
 ```text
 Invalid file URL provided.
 ```
+
+Missing, conflicting, or incomplete source attributes instead display the built-in `Invalid download source provided.` message.
 
 ### Message: Not Logged In
 
@@ -88,7 +90,7 @@ Default:
 Please log in to access this file.
 ```
 
-GitHub-specific source, token, access, rate-limit, release, and asset errors use built-in translated messages and are not configurable in version 1.5.0.
+Invalid-source and GitHub-specific token, access, rate-limit, release, and asset errors use built-in translated messages and are not configurable.
 
 ## GitHub Access
 
@@ -112,17 +114,17 @@ See [Shortcode](shortcode.md) for `github_repo`, `github_tag`, and `github_asset
 
 ## WooCommerce
 
-WooCommerce is optional. When it is not active, product purchase and subscription checks are skipped while role-based and administrator access continue to work.
+WooCommerce is optional. When it is not active, product purchase and subscription checks are skipped while role-based and `manage_options` access continue to work.
 
 WooCommerce Subscriptions is also optional. When WooCommerce is active but WooCommerce Subscriptions is not, product purchase checks still work and only subscription checks are skipped.
 
-If no default product IDs, roles, or subscription product IDs are configured, only administrators receive access unless a shortcode supplies its own access rules.
+If no default product IDs, roles, or subscription product IDs are configured, only users with the `manage_options` capability receive access unless a shortcode supplies its own access rules.
 
 ## Shortcode Overrides
 
-The `products`, `roles`, `subscriptions`, and `label` shortcode attributes can override their corresponding defaults for an individual download.
+The `label` attribute sets the link text for an individual download.
 
-Shortcode product IDs, roles, and subscription IDs replace the saved defaults for that download. They are not merged with them.
+Non-empty `products`, `roles`, and `subscriptions` values replace the corresponding saved defaults for that download. They are not merged with them.
 
 See [Shortcode](shortcode.md) for the complete attribute reference and examples.
 
