@@ -18,7 +18,7 @@ function sfa_sanitize_github_repository( $repository ) {
 }
 
 // create and store a short-lived protected download token
-function sfa_create_protected_download_token( $source, $user_id, $roles, $subscriptions ) {
+function sfa_create_protected_download_token( $source, $user_id, $roles, $subscriptions, $products = array() ) {
 	$user_id = absint( $user_id );
 
 	if ( ! is_array( $source ) || empty( $source['source'] ) || ! $user_id ) {
@@ -46,6 +46,7 @@ function sfa_create_protected_download_token( $source, $user_id, $roles, $subscr
 		'user_id' => $user_id,
 		'roles' => array_values( (array) $roles ),
 		'subscriptions' => array_values( (array) $subscriptions ),
+		'products' => array_values( (array) $products ),
 		'expires_at' => time() + ( 15 * MINUTE_IN_SECONDS ),
 	);
 	$download = array_merge( $download, $source );
@@ -58,7 +59,7 @@ function sfa_create_protected_download_token( $source, $user_id, $roles, $subscr
 }
 
 // create a short-lived protected url download
-function sfa_create_protected_download_url( $url, $user_id, $roles, $subscriptions ) {
+function sfa_create_protected_download_url( $url, $user_id, $roles, $subscriptions, $products = array() ) {
 	$url = esc_url_raw( $url, array( 'http', 'https' ) );
 
 	if ( empty( $url ) ) {
@@ -72,12 +73,13 @@ function sfa_create_protected_download_url( $url, $user_id, $roles, $subscriptio
 		),
 		$user_id,
 		$roles,
-		$subscriptions
+		$subscriptions,
+		$products
 	);
 }
 
 // create a short-lived protected github release download
-function sfa_create_protected_github_download_url( $repository, $tag, $asset, $user_id, $roles, $subscriptions ) {
+function sfa_create_protected_github_download_url( $repository, $tag, $asset, $user_id, $roles, $subscriptions, $products = array() ) {
 	$repository = sfa_sanitize_github_repository( $repository );
 	$tag = trim( sanitize_text_field( $tag ) );
 	$asset = trim( sanitize_text_field( $asset ) );
@@ -103,12 +105,13 @@ function sfa_create_protected_github_download_url( $repository, $tag, $asset, $u
 		),
 		$user_id,
 		$roles,
-		$subscriptions
+		$subscriptions,
+		$products
 	);
 }
 
 // check a user's current access against stored rules
-function sfa_protected_download_user_has_access( $user_id, $roles, $subscriptions ) {
+function sfa_protected_download_user_has_access( $user_id, $roles, $subscriptions, $products = array() ) {
 	$user_id = absint( $user_id );
 
 	if ( ! $user_id ) {
@@ -131,6 +134,17 @@ function sfa_protected_download_user_has_access( $user_id, $roles, $subscription
 
 	if ( array_intersect( $roles, $user_roles ) ) {
 		return true;
+	}
+
+	// use the logged-in user id only so guest purchases are not matched by email
+	if ( function_exists( 'wc_customer_bought_product' ) ) {
+		foreach ( (array) $products as $product_id ) {
+			$product_id = absint( $product_id );
+
+			if ( $product_id && wc_customer_bought_product( '', $user_id, $product_id ) ) {
+				return true;
+			}
+		}
 	}
 
 	if ( function_exists( 'wcs_user_has_subscription' ) ) {
@@ -440,7 +454,12 @@ function sfa_handle_protected_download() {
 		);
 	}
 
-	if ( ! sfa_protected_download_user_has_access( $user_id, $download['roles'], $download['subscriptions'] ) ) {
+	$products = array();
+	if ( isset( $download['products'] ) ) {
+		$products = $download['products'];
+	}
+
+	if ( ! sfa_protected_download_user_has_access( $user_id, $download['roles'], $download['subscriptions'], $products ) ) {
 		sfa_stop_protected_download(
 			get_option( 'sfa_message_no_access', __( 'You do not have access to this file.', 'secure-file-access' ) )
 		);
