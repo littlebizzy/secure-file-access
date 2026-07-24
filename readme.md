@@ -8,7 +8,7 @@ Secure File Access creates protected download links using the `[file_access]` sh
 
 Visitors must be logged in, administrators always have access, and other users receive access when they match any configured WordPress role, purchased any configured WooCommerce product, or have an active or pending-cancel WooCommerce subscription for any configured product ID.
 
-Default product IDs, subscription product IDs, WordPress roles, the download button label, and frontend error messages can be configured under **Settings > Secure File Access**. Shortcode `products`, `roles`, and `subscriptions` values override their corresponding defaults for individual downloads.
+Default product IDs, subscription product IDs, WordPress roles, the download button label, and frontend error messages can be configured under **Settings > Secure File Access**. Non-empty shortcode `products`, `roles`, and `subscriptions` values override their corresponding defaults for individual downloads.
 
 WooCommerce and WooCommerce Subscriptions are optional. Product purchase checks require WooCommerce, while subscription checks require WooCommerce Subscriptions. If no product IDs, roles, or subscription product IDs are configured, only administrators receive access. Normal file URLs are sanitized and unsupported protocols are rejected before download links are rendered.
 
