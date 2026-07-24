@@ -98,6 +98,8 @@ The GitHub Access tab stores one personal access token for the current WordPress
 
 A fine-grained personal access token is preferred. Give it access only to repositories used by the shortcodes and grant **Contents: Read-only** permission.
 
+The token field includes a link to [GitHub's personal access token settings](https://github.com/settings/personal-access-tokens), which opens in a new browser tab.
+
 A classic personal access token generally requires the broader `repo` scope to read private repositories. Organization policies, approval requirements, or SSO authorization can still prevent a valid token from accessing a repository.
 
 The saved token is never displayed again. The settings page only shows whether a token is configured.
