@@ -48,10 +48,13 @@ function sfa_settings_page() {
         return;
     }
 
+    $settings_url = add_query_arg( 'page', 'secure-file-access', admin_url( 'options-general.php' ) );
+
     // remove github token
     if ( isset( $_POST['sfa_remove_github_token'] ) && check_admin_referer( 'sfa_remove_github_token', 'sfa_remove_nonce' ) ) {
         delete_option( 'sfa_github_token' );
-        echo '<div class="notice notice-success is-dismissible"><p><strong>' . esc_html__( 'GitHub token removed successfully.', 'secure-file-access' ) . '</strong></p></div>';
+        wp_safe_redirect( add_query_arg( 'sfa_notice', 'token-removed', $settings_url ) );
+        exit;
     }
 
     // save settings
@@ -141,8 +144,13 @@ function sfa_settings_page() {
             }
         }
 
-        // admin notice
-        echo '<div class="notice notice-success is-dismissible"><p><strong>' . esc_html__( 'Settings saved successfully.', 'secure-file-access' ) . '</strong></p></div>';
+        wp_safe_redirect( add_query_arg( 'sfa_notice', 'settings-saved', $settings_url ) );
+        exit;
+    }
+
+    $notice = '';
+    if ( isset( $_GET['sfa_notice'] ) && is_string( $_GET['sfa_notice'] ) ) {
+        $notice = sanitize_key( wp_unslash( $_GET['sfa_notice'] ) );
     }
 
 	// load settings (plain text defaults)
@@ -162,6 +170,12 @@ function sfa_settings_page() {
         <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
         <?php
+        if ( 'settings-saved' === $notice ) {
+            echo '<div class="notice notice-success is-dismissible"><p><strong>' . esc_html__( 'Settings saved successfully.', 'secure-file-access' ) . '</strong></p></div>';
+        } elseif ( 'token-removed' === $notice ) {
+            echo '<div class="notice notice-success is-dismissible"><p><strong>' . esc_html__( 'GitHub token removed successfully.', 'secure-file-access' ) . '</strong></p></div>';
+        }
+
         // optional woocommerce access notices
         if ( ! function_exists( 'wc_customer_bought_product' ) ) {
             printf(
