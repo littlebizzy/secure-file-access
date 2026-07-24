@@ -31,7 +31,7 @@ WooCommerce product purchase access:
 Latest stable GitHub Release:
 
 ```text
-[file_access github_repo="littlebizzy/private-plugin"]
+[file_access github_repo="littlebizzy/private-plugin" subscriptions="123"]
 ```
 
 Override the configured access defaults and GitHub release selection:
