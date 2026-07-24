@@ -6,11 +6,11 @@ Easy file downloads for WordPress
 
 Secure File Access creates protected download links using the `[file_access]` shortcode. Downloads can use a normal HTTP or HTTPS URL or a ZIP asset from a public or private GitHub Release.
 
-Visitors must be logged in, administrators always have access, and other users receive access when they match any configured WordPress role or have an active or pending-cancel WooCommerce subscription for any configured product ID.
+Visitors must be logged in, administrators always have access, and other users receive access when they match any configured WordPress role, purchased any configured WooCommerce product, or have an active or pending-cancel WooCommerce subscription for any configured product ID.
 
-Default subscription product IDs, WordPress roles, the download button label, and frontend error messages can be configured under **Settings > Secure File Access**. Shortcode `roles` and `subscriptions` values override their corresponding defaults for individual downloads.
+Default product IDs, subscription product IDs, WordPress roles, the download button label, and frontend error messages can be configured under **Settings > Secure File Access**. Shortcode `products`, `roles`, and `subscriptions` values override their corresponding defaults for individual downloads.
 
-WooCommerce Subscriptions is optional. When it is not active, only role-based access is available. If no roles or subscription product IDs are configured, only administrators receive access. Normal file URLs are sanitized and unsupported protocols are rejected before download links are rendered.
+WooCommerce and WooCommerce Subscriptions are optional. Product purchase checks require WooCommerce, while subscription checks require WooCommerce Subscriptions. If no product IDs, roles, or subscription product IDs are configured, only administrators receive access. Normal file URLs are sanitized and unsupported protocols are rejected before download links are rendered.
 
 Authorized downloads use a short-lived local `?download=` link instead of placing the destination URL or GitHub token in the page HTML. Each link is tied to the current user, expires after 15 minutes, rechecks access when requested, and becomes invalid after a successful redirect. Protected download responses are marked private and non-cacheable and do not forward referrer information.
 
@@ -22,6 +22,12 @@ Normal URL usage:
 [file_access url="https://example.com/plugin.zip"]
 ```
 
+WooCommerce product purchase access:
+
+```text
+[file_access url="https://example.com/plugin.zip" products="123,456"]
+```
+
 Latest stable GitHub Release:
 
 ```text
@@ -31,7 +37,7 @@ Latest stable GitHub Release:
 Override the configured access defaults and GitHub release selection:
 
 ```text
-[file_access github_repo="littlebizzy/private-plugin" github_tag="v1.4.0" github_asset="private-plugin.zip" label="Download Plugin" subscriptions="123,456" roles="customer,shop_manager"]
+[file_access github_repo="littlebizzy/private-plugin" github_tag="v2.0.0" github_asset="private-plugin.zip" label="Download Plugin" products="123,456" subscriptions="789" roles="customer,shop_manager"]
 ```
 
 ## Documentation
@@ -41,6 +47,10 @@ Override the configured access defaults and GitHub release selection:
 - [Shortcode](docs/shortcode.md)
 
 ## Changelog
+
+### 1.5.0
+- adds `products` shortcode access and a Default Product IDs setting for logged-in customers who purchased listed WooCommerce products
+- stores product rules in protected tokens and rechecks purchases when links are opened without matching guest orders by billing email
 
 ### 1.4.1
 - distinguishes rejected tokens, GitHub rate limits, access failures, missing resources, and temporary GitHub server failures without exposing API response bodies
