@@ -4,6 +4,18 @@ Secure File Access settings are available under **Settings > Secure File Access*
 
 Only users with the `manage_options` capability can view or change these settings.
 
+## Saving, Removal, and Notices
+
+The Access Defaults, Error Messages, and GitHub Access tabs are sections of one settings form. **Save Changes** submits all three sections together, including fields in tabs that are not currently visible.
+
+General settings saves use one action-specific WordPress nonce and require the `manage_options` capability. Submitted values are sanitized or normalized before they are stored.
+
+**Remove Token** is intentionally a separate form and action. It uses its own action-specific nonce, deletes only the saved GitHub token, and does not submit or change the other settings.
+
+After either action, the plugin redirects back to the settings page before WordPress outputs the admin screen. This prevents browser form-resubmission prompts. A successful general save displays **Settings saved successfully.**, while token removal displays **GitHub token removed successfully.**
+
+Both messages use standard dismissible WordPress admin notice markup. The notice type is selected from a fixed query value after the redirect; no option, transient, or user metadata is created to store notice state. Dismissing a notice only removes it from the current page display.
+
 ## Access Defaults
 
 ### Default Product IDs
