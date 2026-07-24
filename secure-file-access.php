@@ -3,7 +3,7 @@
 Plugin Name: Secure File Access
 Plugin URI: https://www.littlebizzy.com/plugins/secure-file-access
 Description: Easy file downloads for WordPress
-Version: 1.5.0
+Version: 1.5.1
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 Requires PHP: 7.0
@@ -254,7 +254,7 @@ function sfa_settings_page() {
                         <th scope="row"><?php echo esc_html__( 'Personal Access Token', 'secure-file-access' ); ?></th>
                         <td>
                             <input type="password" name="sfa_github_token" value="" class="regular-text" style="width:100%;" autocomplete="new-password" spellcheck="false">
-                            <p class="description"><?php echo esc_html__( 'Enter a fine-grained or classic token. Fine-grained tokens require read-only Contents access. Leave blank to keep the configured token.', 'secure-file-access' ); ?></p>
+                            <p class="description"><?php echo esc_html__( 'Enter a fine-grained or classic token. Fine-grained tokens require read-only Contents access. Leave blank to keep the configured token.', 'secure-file-access' ); ?> <a href="<?php echo esc_url( 'https://github.com/settings/personal-access-tokens' ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html__( 'Create a personal access token on GitHub.', 'secure-file-access' ); ?></a></p>
                             <?php
                             if ( $github_token_configured ) {
                                 echo '<p><strong>' . esc_html__( 'Token configured.', 'secure-file-access' ) . '</strong></p>';
