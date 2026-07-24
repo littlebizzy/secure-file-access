@@ -32,17 +32,19 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
 
 // register settings page
 add_action( 'admin_menu', function() {
-	add_options_page(
+	$hook_suffix = add_options_page(
 		__( 'Secure File Access Settings', 'secure-file-access' ),
 		__( 'Secure File Access', 'secure-file-access' ),
 		'manage_options',
 		'secure-file-access',
 		'sfa_settings_page'
 	);
+
+	add_action( 'load-' . $hook_suffix, 'sfa_handle_settings_actions' );
 } );
 
-// settings page content
-function sfa_settings_page() {
+// process settings actions before admin page output
+function sfa_handle_settings_actions() {
     // ensure capability
     if ( ! current_user_can( 'manage_options' ) ) {
         return;
@@ -146,6 +148,14 @@ function sfa_settings_page() {
 
         wp_safe_redirect( add_query_arg( 'sfa_notice', 'settings-saved', $settings_url ) );
         exit;
+    }
+}
+
+// settings page content
+function sfa_settings_page() {
+    // ensure capability
+    if ( ! current_user_can( 'manage_options' ) ) {
+        return;
     }
 
     $notice = '';
