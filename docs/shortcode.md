@@ -16,7 +16,7 @@ Secure File Access uses the `[file_access]` shortcode to display a protected dow
 
 When `github_tag` is omitted, the plugin uses the repository's latest published stable GitHub Release. Drafts, prereleases, and Git tags without an associated GitHub Release are not used.
 
-The visitor must be logged in and have access through an allowed WordPress role, an eligible WooCommerce subscription, or administrator privileges.
+The visitor must be logged in and have access through an allowed WordPress role, a recorded WooCommerce product purchase, an eligible WooCommerce subscription, or administrator privileges.
 
 ## Attributes
 
@@ -27,6 +27,7 @@ The visitor must be logged in and have access through an allowed WordPress role,
 | `github_tag` | No | Exact published stable release tag. Uses the latest stable release when omitted. |
 | `github_asset` | No | Exact ZIP release asset filename. Required when the selected release contains multiple ZIP assets. |
 | `label` | No | Download link text. Uses the configured default label when omitted. |
+| `products` | No | Comma-separated WooCommerce product IDs. Overrides the configured default product IDs. |
 | `roles` | No | Comma-separated WordPress role slugs. Overrides the configured default roles. |
 | `subscriptions` | No | Comma-separated WooCommerce subscription product IDs. Overrides the configured default subscription IDs. |
 
@@ -45,7 +46,7 @@ When the latest stable release contains exactly one ZIP asset, it is selected au
 ### Exact Release Tag
 
 ```text
-[file_access github_repo="littlebizzy/private-plugin" github_tag="v1.4.0"]
+[file_access github_repo="littlebizzy/private-plugin" github_tag="v2.0.0"]
 ```
 
 ### Exact Release Asset
@@ -57,7 +58,7 @@ When the latest stable release contains exactly one ZIP asset, it is selected au
 ### Exact Tag and Asset
 
 ```text
-[file_access github_repo="littlebizzy/private-plugin" github_tag="v1.4.0" github_asset="private-plugin.zip"]
+[file_access github_repo="littlebizzy/private-plugin" github_tag="v2.0.0" github_asset="private-plugin.zip"]
 ```
 
 The asset name must match the uploaded ZIP asset exactly. When multiple ZIP assets exist and `github_asset` is omitted, the download stops with an explanatory error.
@@ -69,6 +70,14 @@ The asset name must match the uploaded ZIP asset exactly. When multiple ZIP asse
 ```text
 [file_access url="https://example.com/plugin.zip" label="Download Plugin"]
 ```
+
+### Product Purchase Access
+
+```text
+[file_access url="https://example.com/plugin.zip" products="123,456"]
+```
+
+A logged-in user receives access when WooCommerce records that their WordPress account purchased any listed product. Guest orders are not matched by billing email.
 
 ### Role-Based Access
 
@@ -86,21 +95,21 @@ A logged-in user receives access when any listed role matches one of their curre
 
 A logged-in user receives access when they have an active or pending-cancel WooCommerce subscription for any listed product ID.
 
-### Roles and Subscriptions
+### Combined Access
 
 ```text
-[file_access github_repo="littlebizzy/private-plugin" label="Download Plugin" roles="customer" subscriptions="123,456"]
+[file_access github_repo="littlebizzy/private-plugin" label="Download Plugin" products="123" roles="customer" subscriptions="456"]
 ```
 
-Roles and subscriptions use OR logic. A user only needs to match one allowed role or one eligible subscription.
+Products, roles, and subscriptions use OR logic. A user only needs one qualifying purchase, one allowed role, or one eligible subscription.
 
 ## Default Settings and Overrides
 
-Default roles, subscription product IDs, and the download label can be configured under **Settings > Secure File Access**.
+Default product IDs, roles, subscription product IDs, and the download label can be configured under **Settings > Secure File Access**.
 
-When a shortcode includes `roles` or `subscriptions`, that value replaces the corresponding default for that download. It is not merged with the saved default.
+When a shortcode includes `products`, `roles`, or `subscriptions`, that value replaces the corresponding default for that download. It is not merged with the saved default.
 
-Administrators always have access. If no roles or subscription product IDs are configured, only administrators can use the protected download link.
+Administrators always have access. If no product IDs, roles, or subscription product IDs are configured, only administrators can use the protected download link.
 
 ## Protected Download Links
 
@@ -108,7 +117,7 @@ The destination URL and GitHub token are not placed directly in the page HTML. A
 
 - is tied to the current user
 - expires after 15 minutes
-- rechecks access when opened
+- rechecks product purchases, roles, and subscriptions when opened
 - becomes invalid after a successful redirect
 - uses private, non-cacheable responses without forwarding referrer information
 
