@@ -50,8 +50,8 @@ Override the configured access defaults and GitHub release selection:
 ## Changelog
 
 ### 1.5.3
-- changes the settings section links to a labelled navigation landmark and identifies the selected section for assistive technology
-- improves the settings page heading structure and keeps active-section feedback synchronized during instant section switching
+- changes the settings tabs from an `h2` wrapper to a labelled `nav` and adds `aria-current="page"` to the active tab
+- changes each settings section heading from `h3` to `h2` and updates `aria-current` when tabs switch without reloading
 
 ### 1.5.2
 - preserves the selected settings tab after saving settings or removing the GitHub token
