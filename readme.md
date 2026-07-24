@@ -49,6 +49,10 @@ Override the configured access defaults and GitHub release selection:
 
 ## Changelog
 
+### 1.5.3
+- changes the settings section links to a labelled navigation landmark and identifies the selected section for assistive technology
+- improves the settings page heading structure and keeps active-section feedback synchronized during instant section switching
+
 ### 1.5.2
 - preserves the selected settings tab after saving settings or removing the GitHub token
 - adds validated query-based tab URLs using `defaults`, `errors`, and `github`, with invalid values falling back to Access Defaults
