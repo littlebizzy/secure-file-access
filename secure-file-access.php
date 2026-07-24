@@ -3,7 +3,7 @@
 Plugin Name: Secure File Access
 Plugin URI: https://www.littlebizzy.com/plugins/secure-file-access
 Description: Easy file downloads for WordPress
-Version: 1.5.1
+Version: 1.5.2
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 Requires PHP: 7.0
@@ -30,6 +30,22 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
 	return $overrides;
 }, 999 );
 
+// validate the selected settings tab
+function sfa_validate_settings_tab( $tab ) {
+    if ( ! is_string( $tab ) ) {
+        return 'defaults';
+    }
+
+    $tab = sanitize_key( wp_unslash( $tab ) );
+    $tabs = array( 'defaults', 'errors', 'github' );
+
+    if ( ! in_array( $tab, $tabs, true ) ) {
+        return 'defaults';
+    }
+
+    return $tab;
+}
+
 // register settings page
 add_action( 'admin_menu', function() {
 	$hook_suffix = add_options_page(
@@ -51,11 +67,23 @@ function sfa_handle_settings_actions() {
     }
 
     $settings_url = add_query_arg( 'page', 'secure-file-access', admin_url( 'options-general.php' ) );
+    $active_tab = 'defaults';
+    if ( isset( $_POST['sfa_active_tab'] ) ) {
+        $active_tab = sfa_validate_settings_tab( $_POST['sfa_active_tab'] );
+    }
 
     // remove github token
     if ( isset( $_POST['sfa_remove_github_token'] ) && check_admin_referer( 'sfa_remove_github_token', 'sfa_remove_nonce' ) ) {
         delete_option( 'sfa_github_token' );
-        wp_safe_redirect( add_query_arg( 'sfa_notice', 'token-removed', $settings_url ) );
+        wp_safe_redirect(
+            add_query_arg(
+                array(
+                    'sfa_notice' => 'token-removed',
+                    'tab' => $active_tab,
+                ),
+                $settings_url
+            )
+        );
         exit;
     }
 
@@ -146,7 +174,15 @@ function sfa_handle_settings_actions() {
             }
         }
 
-        wp_safe_redirect( add_query_arg( 'sfa_notice', 'settings-saved', $settings_url ) );
+        wp_safe_redirect(
+            add_query_arg(
+                array(
+                    'sfa_notice' => 'settings-saved',
+                    'tab' => $active_tab,
+                ),
+                $settings_url
+            )
+        );
         exit;
     }
 }
@@ -161,6 +197,34 @@ function sfa_settings_page() {
     $notice = '';
     if ( isset( $_GET['sfa_notice'] ) && is_string( $_GET['sfa_notice'] ) ) {
         $notice = sanitize_key( wp_unslash( $_GET['sfa_notice'] ) );
+    }
+
+    $active_tab = 'defaults';
+    if ( isset( $_GET['tab'] ) ) {
+        $active_tab = sfa_validate_settings_tab( $_GET['tab'] );
+    }
+
+    $settings_url = add_query_arg( 'page', 'secure-file-access', admin_url( 'options-general.php' ) );
+    $defaults_url = add_query_arg( 'tab', 'defaults', $settings_url );
+    $errors_url = add_query_arg( 'tab', 'errors', $settings_url );
+    $github_url = add_query_arg( 'tab', 'github', $settings_url );
+
+    $defaults_tab_class = 'nav-tab';
+    $errors_tab_class = 'nav-tab';
+    $github_tab_class = 'nav-tab';
+    $defaults_display = 'none';
+    $errors_display = 'none';
+    $github_display = 'none';
+
+    if ( 'errors' === $active_tab ) {
+        $errors_tab_class .= ' nav-tab-active';
+        $errors_display = 'block';
+    } elseif ( 'github' === $active_tab ) {
+        $github_tab_class .= ' nav-tab-active';
+        $github_display = 'block';
+    } else {
+        $defaults_tab_class .= ' nav-tab-active';
+        $defaults_display = 'block';
     }
 
 	// load settings (plain text defaults)
@@ -201,15 +265,16 @@ function sfa_settings_page() {
         ?>
 
 		<h2 class="nav-tab-wrapper">
-			<a href="#access-defaults" class="nav-tab nav-tab-active"><?php esc_html_e( 'Access Defaults', 'secure-file-access' ); ?></a>
-    		<a href="#error-messages" class="nav-tab"><?php esc_html_e( 'Error Messages', 'secure-file-access' ); ?></a>
-            <a href="#github-access" class="nav-tab"><?php esc_html_e( 'GitHub Access', 'secure-file-access' ); ?></a>
+			<a href="<?php echo esc_url( $defaults_url ); ?>" class="<?php echo esc_attr( $defaults_tab_class ); ?>" data-tab="defaults" data-target="#access-defaults"><?php esc_html_e( 'Access Defaults', 'secure-file-access' ); ?></a>
+    		<a href="<?php echo esc_url( $errors_url ); ?>" class="<?php echo esc_attr( $errors_tab_class ); ?>" data-tab="errors" data-target="#error-messages"><?php esc_html_e( 'Error Messages', 'secure-file-access' ); ?></a>
+            <a href="<?php echo esc_url( $github_url ); ?>" class="<?php echo esc_attr( $github_tab_class ); ?>" data-tab="github" data-target="#github-access"><?php esc_html_e( 'GitHub Access', 'secure-file-access' ); ?></a>
 		</h2>
 
         <form method="post">
             <?php wp_nonce_field( 'sfa_save_settings', 'sfa_nonce' ); ?>
+            <input type="hidden" name="sfa_active_tab" value="<?php echo esc_attr( $active_tab ); ?>">
 
-            <div id="access-defaults" class="tab-content" style="display: block;">
+            <div id="access-defaults" class="tab-content" style="display: <?php echo esc_attr( $defaults_display ); ?>;">
                 <h3><?php echo esc_html__( 'Access Defaults', 'secure-file-access' ); ?></h3>
                 <table class="form-table">
                     <tr>
@@ -243,7 +308,7 @@ function sfa_settings_page() {
                 </table>
             </div>
 
-            <div id="error-messages" class="tab-content" style="display: none;">
+            <div id="error-messages" class="tab-content" style="display: <?php echo esc_attr( $errors_display ); ?>;">
                 <h3><?php echo esc_html__( 'Error Messages', 'secure-file-access' ); ?></h3>
                 <table class="form-table">
                     <tr>
@@ -270,7 +335,7 @@ function sfa_settings_page() {
                 </table>
             </div>
 
-            <div id="github-access" class="tab-content" style="display: none;">
+            <div id="github-access" class="tab-content" style="display: <?php echo esc_attr( $github_display ); ?>;">
                 <h3><?php echo esc_html__( 'GitHub Access', 'secure-file-access' ); ?></h3>
                 <p><?php echo esc_html__( 'Configure one GitHub personal access token for private release downloads from this WordPress site.', 'secure-file-access' ); ?></p>
                 <table class="form-table">
@@ -300,6 +365,7 @@ function sfa_settings_page() {
         <form method="post" id="sfa-remove-github-token-form">
             <?php wp_nonce_field( 'sfa_remove_github_token', 'sfa_remove_nonce' ); ?>
             <input type="hidden" name="sfa_remove_github_token" value="1">
+            <input type="hidden" name="sfa_active_tab" value="github">
         </form>
 	</div>
 
@@ -308,6 +374,8 @@ function sfa_settings_page() {
         (function () {
             var wrap = document.getElementById('sfa-settings');
             if (!wrap) { return; }
+
+            var activeTabInput = wrap.querySelector('input[name="sfa_active_tab"]');
 
             wrap.querySelectorAll('.nav-tab').forEach(function (tab) {
                 tab.addEventListener('click', function (e) {
@@ -323,9 +391,17 @@ function sfa_settings_page() {
                     wrap.querySelectorAll('.tab-content').forEach(function (content) {
                         content.style.display = 'none';
                     });
-                    var target = this.getAttribute('href');
+                    var target = this.getAttribute('data-target');
                     var pane = wrap.querySelector(target);
                     if (pane) { pane.style.display = 'block'; }
+
+                    if (activeTabInput) {
+                        activeTabInput.value = this.getAttribute('data-tab');
+                    }
+
+                    if (window.history && window.history.replaceState) {
+                        window.history.replaceState(null, '', this.getAttribute('href'));
+                    }
                 });
             });
         })();
