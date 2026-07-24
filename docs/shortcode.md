@@ -16,7 +16,7 @@ Secure File Access uses the `[file_access]` shortcode to display a protected dow
 
 When `github_tag` is omitted, the plugin uses the repository's latest published stable GitHub Release. Drafts, prereleases, and Git tags without an associated GitHub Release are not used.
 
-The visitor must be logged in and have access through an allowed WordPress role, a recorded WooCommerce product purchase, an eligible WooCommerce subscription, or administrator privileges.
+The visitor must be logged in and have access through an allowed WordPress role, a recorded WooCommerce product purchase, an eligible WooCommerce subscription, or the `manage_options` capability.
 
 ## Attributes
 
@@ -27,11 +27,11 @@ The visitor must be logged in and have access through an allowed WordPress role,
 | `github_tag` | No | Exact published stable release tag. Uses the latest stable release when omitted. |
 | `github_asset` | No | Exact ZIP release asset filename. Required when the selected release contains multiple ZIP assets. |
 | `label` | No | Download link text. Uses the configured default label when omitted. |
-| `products` | No | Comma-separated WooCommerce product IDs. Overrides the configured default product IDs. |
-| `roles` | No | Comma-separated WordPress role slugs. Overrides the configured default roles. |
-| `subscriptions` | No | Comma-separated WooCommerce subscription product IDs. Overrides the configured default subscription IDs. |
+| `products` | No | Comma-separated WooCommerce product IDs. Overrides the configured default product IDs when non-empty. |
+| `roles` | No | Comma-separated WordPress role slugs. Overrides the configured default roles when non-empty. |
+| `subscriptions` | No | Comma-separated WooCommerce subscription product IDs. Overrides the configured default subscription IDs when non-empty. |
 
-Use either `url` or `github_repo`, not both. If both are supplied, the shortcode rejects the request and displays `Invalid download source provided.` GitHub tag and asset attributes require `github_repo`.
+Exactly one source is required. Use either `url` or `github_repo`, not both. A missing source, any URL combined with GitHub source attributes, an invalid repository, or `github_tag` or `github_asset` without a valid `github_repo` displays `Invalid download source provided.`
 
 ## GitHub Examples
 
@@ -107,9 +107,9 @@ Products, roles, and subscriptions use OR logic. A user only needs one qualifyin
 
 Default product IDs, roles, subscription product IDs, and the download label can be configured under **Settings > Secure File Access**.
 
-When a shortcode includes `products`, `roles`, or `subscriptions`, that value replaces the corresponding default for that download. It is not merged with the saved default.
+A non-empty shortcode `products`, `roles`, or `subscriptions` value replaces the corresponding default for that download. It is not merged with the saved default. The `label` value sets the link text directly.
 
-Administrators always have access. If no product IDs, roles, or subscription product IDs are configured, only administrators can use the protected download link.
+Users with the `manage_options` capability always have access. If no product IDs, roles, or subscription product IDs are configured, only those users can use the protected download link.
 
 ## Protected Download Links
 
@@ -117,10 +117,10 @@ The destination URL and GitHub token are not placed directly in the page HTML. A
 
 - is tied to the current user
 - expires after 15 minutes
-- rechecks product purchases, roles, and subscriptions when opened
+- rechecks login, user binding, `manage_options`, product purchases, roles, and subscriptions when opened
 - becomes invalid after a successful redirect
 - uses private, non-cacheable responses without forwarding referrer information
 
-Only HTTP and HTTPS URL destinations are accepted. GitHub downloads require a configured token with access to the selected repository.
+Only HTTP and HTTPS URL destinations are accepted. A non-empty URL that fails validation uses the configured Invalid File URL message. Missing, conflicting, or incomplete source attributes use the built-in Invalid Download Source message. GitHub downloads require a configured token with access to the selected repository.
 
 See [Downloads](downloads.md) for the complete download flow and [Settings](settings.md) for saved defaults and GitHub token configuration.
