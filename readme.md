@@ -51,6 +51,7 @@ Override the configured access defaults and GitHub release selection:
 
 ### 1.5.2
 - preserves the selected settings tab after saving settings or removing the GitHub token
+- adds validated query-based tab URLs using `defaults`, `errors`, and `github`, with invalid values falling back to Access Defaults
 
 ### 1.5.1
 - adds a direct link from the GitHub Access settings tab to GitHub's personal access token page, opening safely in a new browser tab
