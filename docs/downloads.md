@@ -51,13 +51,24 @@ The download is allowed when the current user:
 
 - is an administrator with the `manage_options` capability
 - matches any allowed WordPress role
+- purchased any allowed WooCommerce product
 - has an active or pending-cancel WooCommerce subscription for any allowed product ID
 
-Roles and subscriptions use OR logic. Only one matching role or eligible subscription is required.
+Product purchases, roles, and subscriptions use OR logic. Only one qualifying purchase, matching role, or eligible subscription is required.
 
-When WooCommerce Subscriptions is not active, subscription checks are skipped and role-based access continues to work.
+When WooCommerce is not active, product purchase and subscription checks are skipped and role-based access continues to work.
+
+When WooCommerce is active but WooCommerce Subscriptions is not, product purchase checks continue to work and only subscription checks are skipped.
 
 If the user's access changes after the page loads, the protected link uses the latest access state when opened.
+
+## WooCommerce Product Purchases
+
+Product purchase access uses WooCommerce's native `wc_customer_bought_product()` check.
+
+The plugin supplies the logged-in WordPress user ID and leaves the email argument empty. This prevents guest orders from being matched by billing email. WooCommerce decides which order statuses count as paid.
+
+Product IDs are stored with the protected token and checked again when the link is opened. Secure File Access does not add separate refund rules, download limits, license keys, or guest-purchase matching.
 
 ## URL Downloads
 
@@ -89,13 +100,13 @@ The temporary redirect must use HTTPS, include a valid host, contain no embedded
 
 The GitHub personal access token is never added to the protected link or redirect URL. The final temporary GitHub URL may be visible to the authorized user's browser after the redirect and expires according to GitHub's own handling.
 
-GitHub release metadata is resolved when the protected link is opened. Version 1.4.1 does not cache release or asset metadata.
+GitHub release metadata is resolved when the protected link is opened. Version 1.5.0 does not cache release or asset metadata.
 
 ## GitHub Errors
 
 GitHub API failures are converted to concise messages without displaying GitHub response bodies or credentials.
 
-Version 1.4.1 distinguishes:
+Secure File Access distinguishes:
 
 - a rejected token
 - an API rate limit
