@@ -12,9 +12,9 @@ General settings saves use one action-specific WordPress nonce and require the `
 
 **Remove Token** is intentionally a separate form and action. It uses its own action-specific nonce, deletes only the saved GitHub token, and does not submit or change the other settings.
 
-After either action, the plugin redirects back to the settings page before WordPress outputs the admin screen. This prevents browser form-resubmission prompts. A successful general save displays **Settings saved successfully.**, while token removal displays **GitHub token removed successfully.**
+After either action, the plugin redirects back to the settings page before WordPress outputs the admin screen. This prevents browser form-resubmission prompts. General saves return to the selected tab, while token removal returns to GitHub Access. The `tab` query value accepts only `defaults`, `errors`, or `github`; any other value falls back to Access Defaults.
 
-Both messages use standard dismissible WordPress admin notice markup. The notice type is selected from a fixed query value after the redirect; no option, transient, or user metadata is created to store notice state. Dismissing a notice only removes it from the current page display.
+A successful general save displays **Settings saved successfully.**, while token removal displays **GitHub token removed successfully.** Both messages use standard dismissible WordPress admin notice markup. The notice type is selected from a fixed query value after the redirect; no option, transient, or user metadata is created to store notice state. Dismissing a notice only removes it from the current page display.
 
 ## Access Defaults
 
