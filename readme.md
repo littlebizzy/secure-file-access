@@ -28,7 +28,7 @@ WooCommerce product purchase access:
 [file_access url="https://example.com/plugin.zip" products="123,456"]
 ```
 
-Latest stable GitHub Release:
+WooCommerce subscription purchase access with latest GitHub Release:
 
 ```text
 [file_access github_repo="littlebizzy/private-plugin" subscriptions="123"]
