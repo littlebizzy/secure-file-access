@@ -49,14 +49,14 @@ Access is checked when the shortcode is displayed and checked again when the pro
 
 The download is allowed when the current user:
 
-- is an administrator with the `manage_options` capability
+- has the `manage_options` capability
 - matches any allowed WordPress role
 - purchased any allowed WooCommerce product
 - has an active or pending-cancel WooCommerce subscription for any allowed product ID
 
 Product purchases, roles, and subscriptions use OR logic. Only one qualifying purchase, matching role, or eligible subscription is required.
 
-When WooCommerce is not active, product purchase and subscription checks are skipped and role-based access continues to work.
+When WooCommerce is not active, product purchase and subscription checks are skipped and role-based and `manage_options` access continue to work.
 
 When WooCommerce is active but WooCommerce Subscriptions is not, product purchase checks continue to work and only subscription checks are skipped.
 
@@ -76,7 +76,7 @@ Normal URL downloads accept only HTTP and HTTPS destinations.
 
 After all checks pass, the temporary token is deleted and the browser receives a redirect to the configured destination. The destination server then handles file availability, authentication, and transfer.
 
-An empty or unsupported URL displays the configured **Invalid File URL** message. The URL is sanitized when the shortcode is rendered and checked again before the redirect.
+A non-empty URL that cannot be accepted displays the configured **Invalid File URL** message. A missing source or conflicting or incomplete source attributes display the built-in **Invalid download source provided.** message. The URL is sanitized when the shortcode is rendered and checked again before the redirect.
 
 ## GitHub Release Downloads
 
@@ -100,7 +100,7 @@ The temporary redirect must use HTTPS, include a valid host, contain no embedded
 
 The GitHub personal access token is never added to the protected link or redirect URL. The final temporary GitHub URL may be visible to the authorized user's browser after the redirect and expires according to GitHub's own handling.
 
-GitHub release metadata is resolved when the protected link is opened. Version 1.5.0 does not cache release or asset metadata.
+GitHub release metadata is resolved when the protected link is opened. Secure File Access does not cache release or asset metadata.
 
 ## GitHub Errors
 
