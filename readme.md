@@ -49,8 +49,9 @@ Override the configured access defaults and GitHub release selection:
 ## Changelog
 
 ### 1.5.0
-- adds `products` shortcode access and a Default Product IDs setting for logged-in customers who purchased listed WooCommerce products
-- stores product rules in protected tokens and rechecks purchases when links are opened without matching guest orders by billing email
+- adds WooCommerce product purchase access to URL and GitHub downloads through the `products` shortcode attribute and a Default Product IDs setting
+- grants logged-in users access when their account purchased any listed product, using OR logic alongside administrator, role, and eligible subscription access without matching guest orders by billing email
+- stores product rules in short-lived protected tokens and rechecks the customer's purchase access when each download link is opened
 
 ### 1.4.1
 - distinguishes rejected tokens, GitHub rate limits, access failures, missing resources, and temporary GitHub server failures without exposing API response bodies
