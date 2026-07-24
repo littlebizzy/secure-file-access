@@ -166,12 +166,12 @@ function sfa_settings_page() {
         if ( ! function_exists( 'wc_customer_bought_product' ) ) {
             printf(
                 '<div class="notice notice-warning"><p>%s</p></div>',
-                esc_html__( 'WooCommerce is not active. Product purchase and subscription checks will be skipped; only role-based access will apply.', 'secure-file-access' )
+                esc_html__( 'WooCommerce is not active. Product purchase and subscription checks will be skipped; role-based and administrator access will continue to work.', 'secure-file-access' )
             );
         } elseif ( ! function_exists( 'wcs_user_has_subscription' ) ) {
             printf(
                 '<div class="notice notice-warning"><p>%s</p></div>',
-                esc_html__( 'WooCommerce Subscriptions is not active. Subscription checks will be skipped; product purchase and role-based access will continue to work.', 'secure-file-access' )
+                esc_html__( 'WooCommerce Subscriptions is not active. Subscription checks will be skipped; product purchase, role-based, and administrator access will continue to work.', 'secure-file-access' )
             );
         }
         ?>
@@ -233,7 +233,7 @@ function sfa_settings_page() {
                         <th scope="row"><?php echo esc_html__( 'Message: Invalid File URL', 'secure-file-access' ); ?></th>
                         <td>
                             <input type="text" name="sfa_message_invalid_url" value="<?php echo esc_attr( $message_invalid_url ); ?>" class="regular-text" style="width:100%;">
-                            <p class="description"><?php echo esc_html__( 'Shown when the shortcode "url" attribute is empty or invalid.', 'secure-file-access' ); ?></p>
+                            <p class="description"><?php echo esc_html__( 'Shown when a non-empty shortcode "url" attribute is invalid.', 'secure-file-access' ); ?></p>
                         </td>
                     </tr>
                     <tr>
