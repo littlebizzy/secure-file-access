@@ -92,6 +92,18 @@ function sfa_settings_page() {
         $roles_parts = array_values( array_unique( array_filter( $roles_parts ) ) );
         $roles_string = implode( ',', $roles_parts );
 
+        // normalize product ids split on commas only
+        $products_input = '';
+        if ( isset( $_POST['sfa_default_product_ids'] ) && is_string( $_POST['sfa_default_product_ids'] ) ) {
+            $products_input = wp_unslash( $_POST['sfa_default_product_ids'] );
+        }
+        $products_parts = explode( ',', $products_input );
+        $products_parts = array_map( 'trim', $products_parts );
+        $products_parts = array_map( function( $v ) { return preg_replace( '/\D+/', '', $v ); }, $products_parts );
+        $products_parts = array_map( 'absint', $products_parts );
+        $products_parts = array_values( array_unique( array_filter( $products_parts ) ) );
+        $products_string = implode( ',', $products_parts );
+
         // normalize subscription ids split on commas only
         $subs_input = '';
         if ( isset( $_POST['sfa_default_subscription_ids'] ) && is_string( $_POST['sfa_default_subscription_ids'] ) ) {
@@ -115,6 +127,7 @@ function sfa_settings_page() {
         update_option( 'sfa_message_no_access', $message_no_access );
         update_option( 'sfa_message_invalid_url', $message_invalid_url );
         update_option( 'sfa_message_not_logged_in', $message_not_logged_in );
+        update_option( 'sfa_default_product_ids', $products_string );
         update_option( 'sfa_default_subscription_ids', $subs_string );
         update_option( 'sfa_default_roles', $roles_string );
         update_option( 'sfa_default_label', $default_label );
@@ -136,6 +149,7 @@ function sfa_settings_page() {
 	$message_no_access = get_option( 'sfa_message_no_access', __( 'You do not have access to this file.', 'secure-file-access' ) );
 	$message_invalid_url = get_option( 'sfa_message_invalid_url', __( 'Invalid file URL provided.', 'secure-file-access' ) );
 	$message_not_logged_in = get_option( 'sfa_message_not_logged_in', __( 'Please log in to access this file.', 'secure-file-access' ) );
+	$default_product_ids = get_option( 'sfa_default_product_ids', '' );
 	$default_subscription_ids = get_option( 'sfa_default_subscription_ids', '' );
 	$default_roles = get_option( 'sfa_default_roles', '' );
 	$default_label = get_option( 'sfa_default_label', __( 'Download File', 'secure-file-access' ) );
@@ -148,11 +162,16 @@ function sfa_settings_page() {
         <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
         <?php
-        // subscriptions notice
-        if ( ! function_exists( 'wcs_user_has_subscription' ) ) {
+        // optional woocommerce access notices
+        if ( ! function_exists( 'wc_customer_bought_product' ) ) {
             printf(
                 '<div class="notice notice-warning"><p>%s</p></div>',
-                esc_html__( 'WooCommerce Subscriptions is not active. Subscription checks will be skipped; only role-based access will apply.', 'secure-file-access' )
+                esc_html__( 'WooCommerce is not active. Product purchase and subscription checks will be skipped; only role-based access will apply.', 'secure-file-access' )
+            );
+        } elseif ( ! function_exists( 'wcs_user_has_subscription' ) ) {
+            printf(
+                '<div class="notice notice-warning"><p>%s</p></div>',
+                esc_html__( 'WooCommerce Subscriptions is not active. Subscription checks will be skipped; product purchase and role-based access will continue to work.', 'secure-file-access' )
             );
         }
         ?>
@@ -170,10 +189,17 @@ function sfa_settings_page() {
                 <h3><?php echo esc_html__( 'Access Defaults', 'secure-file-access' ); ?></h3>
                 <table class="form-table">
                     <tr>
+                        <th scope="row"><?php echo esc_html__( 'Default Product IDs', 'secure-file-access' ); ?></th>
+                        <td>
+                            <input type="text" name="sfa_default_product_ids" value="<?php echo esc_attr( $default_product_ids ); ?>" class="regular-text" style="width:100%;">
+                            <p class="description"><?php echo esc_html__( 'Comma-separated WooCommerce product IDs. Leave empty to avoid purchase-based access by default.', 'secure-file-access' ); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
                         <th scope="row"><?php echo esc_html__( 'Default Subscription IDs', 'secure-file-access' ); ?></th>
                         <td>
                             <input type="text" name="sfa_default_subscription_ids" value="<?php echo esc_attr( $default_subscription_ids ); ?>" class="regular-text" style="width:100%;">
-                            <p class="description"><?php echo esc_html__( 'Comma-separated WooCommerce subscription product IDs. Leave empty to rely on roles only.', 'secure-file-access' ); ?></p>
+                            <p class="description"><?php echo esc_html__( 'Comma-separated WooCommerce subscription product IDs. Leave empty to avoid subscription-based access by default.', 'secure-file-access' ); ?></p>
                         </td>
                     </tr>
                     <tr>
@@ -200,7 +226,7 @@ function sfa_settings_page() {
                         <th scope="row"><?php echo esc_html__( 'Message: No Access', 'secure-file-access' ); ?></th>
                         <td>
                             <input type="text" name="sfa_message_no_access" value="<?php echo esc_attr( $message_no_access ); ?>" class="regular-text" style="width:100%;">
-                            <p class="description"><?php echo esc_html__( 'Shown when a logged-in user does not meet the required role or WooCommerce subscription.', 'secure-file-access' ); ?></p>
+                            <p class="description"><?php echo esc_html__( 'Shown when a logged-in user does not meet the required role, product purchase, or WooCommerce subscription.', 'secure-file-access' ); ?></p>
                         </td>
                     </tr>
                     <tr>
@@ -287,6 +313,7 @@ function sfa_settings_page() {
 add_shortcode( 'file_access', function( $atts ) {
     // defaults
     $default_label = get_option( 'sfa_default_label', __( 'Download File', 'secure-file-access' ) );
+    $default_product_ids = get_option( 'sfa_default_product_ids', '' );
     $default_sub_ids = get_option( 'sfa_default_subscription_ids', '' );
     $default_roles = explode( ',', get_option( 'sfa_default_roles', '' ) );
     $default_roles = array_map( 'trim', $default_roles );
@@ -307,6 +334,7 @@ add_shortcode( 'file_access', function( $atts ) {
             'github_tag' => '',
             'github_asset' => '',
             'label' => $default_label,
+            'products' => '',
             'subscriptions' => '',
             'roles' => '',
         ),
@@ -360,6 +388,15 @@ add_shortcode( 'file_access', function( $atts ) {
 	$roles = array_values( array_unique( array_filter( $roles ) ) );
 
     // split on commas only and keep digits for ids
+    $products = $default_product_ids;
+    if ( ! empty( $atts['products'] ) ) {
+        $products = $atts['products'];
+    }
+    $products = explode( ',', $products );
+    $products = array_map( 'trim', $products );
+    $products = array_map( function( $v ) { return preg_replace( '/\D+/', '', $v ); }, $products );
+    $products = array_values( array_unique( array_filter( $products ) ) );
+
     $subscriptions = $default_sub_ids;
     if ( ! empty( $atts['subscriptions'] ) ) {
         $subscriptions = $atts['subscriptions'];
@@ -370,11 +407,11 @@ add_shortcode( 'file_access', function( $atts ) {
     $subscriptions = array_values( array_unique( array_filter( $subscriptions ) ) );
 
     // render
-    if ( sfa_protected_download_user_has_access( $user_id, $roles, $subscriptions ) ) {
+    if ( sfa_protected_download_user_has_access( $user_id, $roles, $subscriptions, $products ) ) {
         if ( $github_requested ) {
-            $download_url = sfa_create_protected_github_download_url( $github_repo, $github_tag, $github_asset, $user_id, $roles, $subscriptions );
+            $download_url = sfa_create_protected_github_download_url( $github_repo, $github_tag, $github_asset, $user_id, $roles, $subscriptions, $products );
         } else {
-            $download_url = sfa_create_protected_download_url( $url, $user_id, $roles, $subscriptions );
+            $download_url = sfa_create_protected_download_url( $url, $user_id, $roles, $subscriptions, $products );
         }
 
         if ( empty( $download_url ) ) {
