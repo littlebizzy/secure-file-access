@@ -3,7 +3,7 @@
 Plugin Name: Secure File Access
 Plugin URI: https://www.littlebizzy.com/plugins/secure-file-access
 Description: Easy file downloads for WordPress
-Version: 1.5.2
+Version: 1.5.3
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 Requires PHP: 7.0
@@ -264,18 +264,18 @@ function sfa_settings_page() {
         }
         ?>
 
-		<h2 class="nav-tab-wrapper">
-			<a href="<?php echo esc_url( $defaults_url ); ?>" class="<?php echo esc_attr( $defaults_tab_class ); ?>" data-tab="defaults" data-target="#access-defaults"><?php esc_html_e( 'Access Defaults', 'secure-file-access' ); ?></a>
-    		<a href="<?php echo esc_url( $errors_url ); ?>" class="<?php echo esc_attr( $errors_tab_class ); ?>" data-tab="errors" data-target="#error-messages"><?php esc_html_e( 'Error Messages', 'secure-file-access' ); ?></a>
-            <a href="<?php echo esc_url( $github_url ); ?>" class="<?php echo esc_attr( $github_tab_class ); ?>" data-tab="github" data-target="#github-access"><?php esc_html_e( 'GitHub Access', 'secure-file-access' ); ?></a>
-		</h2>
+		<nav class="nav-tab-wrapper wp-clearfix" aria-label="<?php echo esc_attr__( 'Settings sections', 'secure-file-access' ); ?>">
+			<a href="<?php echo esc_url( $defaults_url ); ?>" class="<?php echo esc_attr( $defaults_tab_class ); ?>" data-tab="defaults" data-target="#access-defaults"<?php if ( 'defaults' === $active_tab ) { echo ' aria-current="page"'; } ?>><?php esc_html_e( 'Access Defaults', 'secure-file-access' ); ?></a>
+    		<a href="<?php echo esc_url( $errors_url ); ?>" class="<?php echo esc_attr( $errors_tab_class ); ?>" data-tab="errors" data-target="#error-messages"<?php if ( 'errors' === $active_tab ) { echo ' aria-current="page"'; } ?>><?php esc_html_e( 'Error Messages', 'secure-file-access' ); ?></a>
+            <a href="<?php echo esc_url( $github_url ); ?>" class="<?php echo esc_attr( $github_tab_class ); ?>" data-tab="github" data-target="#github-access"<?php if ( 'github' === $active_tab ) { echo ' aria-current="page"'; } ?>><?php esc_html_e( 'GitHub Access', 'secure-file-access' ); ?></a>
+		</nav>
 
         <form method="post">
             <?php wp_nonce_field( 'sfa_save_settings', 'sfa_nonce' ); ?>
             <input type="hidden" name="sfa_active_tab" value="<?php echo esc_attr( $active_tab ); ?>">
 
             <div id="access-defaults" class="tab-content" style="display: <?php echo esc_attr( $defaults_display ); ?>;">
-                <h3><?php echo esc_html__( 'Access Defaults', 'secure-file-access' ); ?></h3>
+                <h2><?php echo esc_html__( 'Access Defaults', 'secure-file-access' ); ?></h2>
                 <table class="form-table">
                     <tr>
                         <th scope="row"><?php echo esc_html__( 'Default Product IDs', 'secure-file-access' ); ?></th>
@@ -309,7 +309,7 @@ function sfa_settings_page() {
             </div>
 
             <div id="error-messages" class="tab-content" style="display: <?php echo esc_attr( $errors_display ); ?>;">
-                <h3><?php echo esc_html__( 'Error Messages', 'secure-file-access' ); ?></h3>
+                <h2><?php echo esc_html__( 'Error Messages', 'secure-file-access' ); ?></h2>
                 <table class="form-table">
                     <tr>
                         <th scope="row"><?php echo esc_html__( 'Message: No Access', 'secure-file-access' ); ?></th>
@@ -336,7 +336,7 @@ function sfa_settings_page() {
             </div>
 
             <div id="github-access" class="tab-content" style="display: <?php echo esc_attr( $github_display ); ?>;">
-                <h3><?php echo esc_html__( 'GitHub Access', 'secure-file-access' ); ?></h3>
+                <h2><?php echo esc_html__( 'GitHub Access', 'secure-file-access' ); ?></h2>
                 <p><?php echo esc_html__( 'Configure one GitHub personal access token for private release downloads from this WordPress site.', 'secure-file-access' ); ?></p>
                 <table class="form-table">
                     <tr>
@@ -384,8 +384,10 @@ function sfa_settings_page() {
                     // tabs
                     wrap.querySelectorAll('.nav-tab').forEach(function (t) {
                         t.classList.remove('nav-tab-active');
+                        t.removeAttribute('aria-current');
                     });
                     this.classList.add('nav-tab-active');
+                    this.setAttribute('aria-current', 'page');
 
                     // panes
                     wrap.querySelectorAll('.tab-content').forEach(function (content) {
