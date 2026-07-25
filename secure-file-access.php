@@ -3,7 +3,7 @@
 Plugin Name: Secure File Access
 Plugin URI: https://www.littlebizzy.com/plugins/secure-file-access
 Description: Easy file downloads for WordPress
-Version: 1.5.3
+Version: 1.5.4
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 Requires PHP: 7.0
@@ -275,7 +275,6 @@ function sfa_settings_page() {
             <input type="hidden" name="sfa_active_tab" value="<?php echo esc_attr( $active_tab ); ?>">
 
             <div id="access-defaults" class="tab-content" style="display: <?php echo esc_attr( $defaults_display ); ?>;">
-                <h2><?php echo esc_html__( 'Access Defaults', 'secure-file-access' ); ?></h2>
                 <table class="form-table">
                     <tr>
                         <th scope="row"><?php echo esc_html__( 'Default Product IDs', 'secure-file-access' ); ?></th>
@@ -309,7 +308,6 @@ function sfa_settings_page() {
             </div>
 
             <div id="error-messages" class="tab-content" style="display: <?php echo esc_attr( $errors_display ); ?>;">
-                <h2><?php echo esc_html__( 'Error Messages', 'secure-file-access' ); ?></h2>
                 <table class="form-table">
                     <tr>
                         <th scope="row"><?php echo esc_html__( 'Message: No Access', 'secure-file-access' ); ?></th>
@@ -336,7 +334,6 @@ function sfa_settings_page() {
             </div>
 
             <div id="github-access" class="tab-content" style="display: <?php echo esc_attr( $github_display ); ?>;">
-                <h2><?php echo esc_html__( 'GitHub Access', 'secure-file-access' ); ?></h2>
                 <p><?php echo esc_html__( 'Configure one GitHub personal access token for private release downloads from this WordPress site.', 'secure-file-access' ); ?></p>
                 <table class="form-table">
                     <tr>
