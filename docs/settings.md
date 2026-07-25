@@ -8,7 +8,7 @@ Only users with the `manage_options` capability can view or change these setting
 
 The Access Defaults, Error Messages, and GitHub Access tabs are sections of one settings form. **Save Changes** submits all three sections together, including fields in tabs that are not currently visible.
 
-The section links are exposed as a labelled navigation landmark. The selected section uses `aria-current="page"`, and each section begins with an `h2` heading beneath the settings page `h1`. The same active-section feedback is updated when JavaScript switches sections without a page reload.
+The section links are exposed as a labelled navigation landmark, and the selected section uses `aria-current="page"`. JavaScript updates the same active-section feedback when switching sections without a page reload. The active tab label identifies the visible section, so the form does not repeat the same title inside each panel.
 
 General settings saves use one action-specific WordPress nonce and require the `manage_options` capability. Submitted values are sanitized or normalized before they are stored.
 
