@@ -49,6 +49,9 @@ Override the configured access defaults and GitHub release selection:
 
 ## Changelog
 
+### 1.5.5
+- renames the Access Defaults field label from **Default Download Button Label** to **Default Button Label**
+
 ### 1.5.4
 - removes the repeated Access Defaults, Error Messages, and GitHub Access headings from inside their matching settings tabs
 
