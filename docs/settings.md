@@ -58,7 +58,7 @@ A logged-in user receives access when any listed role matches one of their curre
 
 Users with the `manage_options` capability always have access, even when no role is listed.
 
-### Default Download Button Label
+### Default Button Label
 
 Controls the default text shown for protected download links.
 
