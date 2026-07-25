@@ -49,6 +49,9 @@ Override the configured access defaults and GitHub release selection:
 
 ## Changelog
 
+### 1.5.4
+- removes the repeated Access Defaults, Error Messages, and GitHub Access headings from inside their matching settings tabs
+
 ### 1.5.3
 - changes the settings tabs from an `h2` wrapper to a labelled `nav` and adds `aria-current="page"` to the active tab
 - changes each settings section heading from `h3` to `h2` and updates `aria-current` when tabs switch without reloading
