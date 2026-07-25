@@ -3,7 +3,7 @@
 Plugin Name: Secure File Access
 Plugin URI: https://www.littlebizzy.com/plugins/secure-file-access
 Description: Easy file downloads for WordPress
-Version: 1.5.4
+Version: 1.5.5
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 Requires PHP: 7.0
@@ -298,7 +298,7 @@ function sfa_settings_page() {
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row"><?php echo esc_html__( 'Default Download Button Label', 'secure-file-access' ); ?></th>
+                        <th scope="row"><?php echo esc_html__( 'Default Button Label', 'secure-file-access' ); ?></th>
                         <td>
                             <input type="text" name="sfa_default_label" value="<?php echo esc_attr( $default_label ); ?>" class="regular-text" style="width:100%;">
                             <p class="description"><?php echo esc_html__( 'Can be overridden in the shortcode using the "label" attribute.', 'secure-file-access' ); ?></p>
