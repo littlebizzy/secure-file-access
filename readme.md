@@ -52,6 +52,7 @@ Override the configured access defaults and GitHub release selection:
 ### 1.5.4
 - removes the repeated Access Defaults, Error Messages, and GitHub Access headings from inside their matching settings tabs
 - renames the Access Defaults field label from **Default Download Button Label** to **Default Button Label**
+- moves the GitHub personal access token link into the GitHub Access introduction and removes the duplicate link beside the token field
 
 ### 1.5.3
 - changes the settings tabs from an `h2` wrapper to a labelled `nav` and adds `aria-current="page"` to the active tab
