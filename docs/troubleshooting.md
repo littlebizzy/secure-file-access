@@ -117,7 +117,7 @@ Confirm that:
 
 A Git tag without an associated GitHub Release is not used.
 
-A missing `github_tag` does not fall back to the latest release. A missing `github_asset` does not fall back to the generated archive.
+A specified `github_tag` that does not match a published stable release does not fall back to the latest release. A specified `github_asset` that does not match an uploaded ZIP asset does not fall back to the generated archive.
 
 ## Generated Archive or Uploaded Asset
 
