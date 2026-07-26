@@ -4,7 +4,7 @@ Easy file downloads for WordPress
 
 ## Description
 
-Secure File Access creates protected download links using the `[file_access]` shortcode. Downloads can use a normal HTTP or HTTPS URL or a ZIP asset from a public or private GitHub Release.
+Secure File Access creates protected download links using the `[file_access]` shortcode. Downloads can use a normal HTTP or HTTPS URL, a generated ZIP archive from a public or private GitHub Release, or an explicitly named uploaded ZIP asset.
 
 Visitors must be logged in, administrators always have access, and other users receive access when they match any configured WordPress role, purchased any configured WooCommerce product, or have an active or pending-cancel WooCommerce subscription for any configured product ID.
 
@@ -14,7 +14,7 @@ WooCommerce and WooCommerce Subscriptions are optional. Product purchase checks 
 
 Authorized downloads use a short-lived local `?download=` link instead of placing the destination URL or GitHub token in the page HTML. Each link is tied to the current user, expires after 15 minutes, rechecks access when requested, and becomes invalid after a successful redirect. Protected download responses are marked private and non-cacheable and do not forward referrer information.
 
-The **GitHub Access** tab stores one personal access token per WordPress site. GitHub shortcodes use the latest published stable release by default, can optionally pin an exact release tag or ZIP asset, and resolve the authenticated asset to a temporary GitHub download URL without proxying the file through PHP.
+The **GitHub Access** tab stores one personal access token per WordPress site. GitHub shortcodes use the latest published stable release by default, can optionally require an exact release tag or uploaded ZIP asset, and resolve the generated archive or named asset to a temporary GitHub download URL without proxying the file through PHP.
 
 Normal URL usage:
 
@@ -48,6 +48,11 @@ Override the configured access defaults and GitHub release selection:
 - [Troubleshooting](docs/troubleshooting.md)
 
 ## Changelog
+
+### 1.5.5
+- downloads GitHub's generated ZIP archive for the selected release when `github_asset` is omitted
+- requires exact published release tags and exact named uploaded ZIP assets without falling back when either is missing
+- preserves authenticated temporary redirects for generated archives and uploaded assets
 
 ### 1.5.4
 - removes the repeated Access Defaults, Error Messages, and GitHub Access headings from inside their matching settings tabs
