@@ -10,7 +10,7 @@ Confirm that:
 - exactly one download source is configured
 - the user currently qualifies through `manage_options`, an allowed role, a recorded WooCommerce purchase, or an eligible WooCommerce subscription
 - required plugins are active for the configured access method
-- the page was reloaded after changing settings, purchases, roles, subscriptions, release assets, or GitHub credentials
+- the page was reloaded after changing settings, purchases, roles, subscriptions, release tags, uploaded assets, or GitHub credentials
 
 Protected links are tied to one user, expire after 15 minutes, and are deleted after a successful redirect. Reload the page to create a new link when the user still has access.
 
@@ -105,7 +105,7 @@ Leaving the token field blank preserves the existing token.
 
 ## GitHub Access Is Denied or a Resource Is Missing
 
-GitHub can return similar failures for an inaccessible private repository and a repository, release, tag, or asset that does not exist.
+GitHub can return similar failures for an inaccessible private repository and a repository, release, tag, archive, or asset that does not exist.
 
 Confirm that:
 
@@ -113,17 +113,17 @@ Confirm that:
 - the configured token can access that repository
 - `github_tag` exactly matches a published stable GitHub Release tag
 - the release is not a draft or prerelease
-- `github_asset` exactly matches the uploaded ZIP filename
+- `github_asset` exactly matches the uploaded ZIP filename when supplied
 
 A Git tag without an associated GitHub Release is not used.
 
-## No ZIP Asset or Multiple ZIP Assets
+A missing `github_tag` does not fall back to the latest release. A missing `github_asset` does not fall back to the generated archive.
 
-Secure File Access considers uploaded `.zip` release assets only.
+## Generated Archive or Uploaded Asset
 
-- If the release has exactly one ZIP asset, it is selected automatically.
-- If the release has no ZIP assets, upload one to the release.
-- If the release has multiple ZIP assets, set the exact `github_asset` filename.
+When `github_asset` is omitted, Secure File Access downloads GitHub's generated ZIP archive for the selected release tag. No uploaded release asset is required.
+
+When `github_asset` is supplied, the filename must exactly match an uploaded `.zip` asset in the selected release.
 
 Example:
 
@@ -131,7 +131,7 @@ Example:
 [file_access github_repo="littlebizzy/private-plugin" github_asset="private-plugin.zip"]
 ```
 
-Source archives generated automatically by GitHub are not release assets and are not selected.
+The named asset receives priority and must exist. The plugin does not silently substitute the generated source archive.
 
 ## GitHub Rate Limit or Temporary Failure
 
@@ -141,7 +141,7 @@ It does not automatically retry failed requests. Reload the WordPress page later
 
 ## GitHub Did Not Provide a Temporary Download URL
 
-Secure File Access requires GitHub's asset API to return a temporary redirect. It does not proxy or stream a directly returned ZIP body through PHP.
+Secure File Access requires GitHub's archive or asset API to return a temporary redirect. It does not proxy or stream a directly returned ZIP body through PHP.
 
 The temporary URL must:
 
