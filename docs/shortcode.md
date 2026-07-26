@@ -16,6 +16,8 @@ Secure File Access uses the `[file_access]` shortcode to display a protected dow
 
 When `github_tag` is omitted, the plugin uses the repository's latest published stable GitHub Release. Drafts, prereleases, and Git tags without an associated GitHub Release are not used.
 
+When `github_asset` is omitted, the plugin downloads GitHub's generated ZIP archive for the selected release tag.
+
 The visitor must be logged in and have access through an allowed WordPress role, a recorded WooCommerce product purchase, an eligible WooCommerce subscription, or the `manage_options` capability.
 
 ## Attributes
@@ -25,7 +27,7 @@ The visitor must be logged in and have access through an allowed WordPress role,
 | `url` | One source required | HTTP or HTTPS destination for a normal protected download. |
 | `github_repo` | One source required | GitHub repository in `owner/repository` format. |
 | `github_tag` | No | Exact published stable release tag. Uses the latest stable release when omitted. |
-| `github_asset` | No | Exact ZIP release asset filename. Required when the selected release contains multiple ZIP assets. |
+| `github_asset` | No | Exact uploaded ZIP release asset filename. Uses the selected release tag's generated ZIP archive when omitted. |
 | `label` | No | Download link text. Uses the configured default label when omitted. |
 | `products` | No | Comma-separated WooCommerce product IDs. Overrides the configured default product IDs when non-empty. |
 | `roles` | No | Comma-separated WordPress role slugs. Overrides the configured default roles when non-empty. |
@@ -35,33 +37,37 @@ Exactly one source is required. Use either `url` or `github_repo`, not both. A m
 
 ## GitHub Examples
 
-### Latest Stable Release
+### Latest Stable Release Archive
 
 ```text
 [file_access github_repo="littlebizzy/private-plugin"]
 ```
 
-When the latest stable release contains exactly one ZIP asset, it is selected automatically.
+This downloads GitHub's generated ZIP archive for the latest published stable release tag.
 
-### Exact Release Tag
+### Exact Release Archive
 
 ```text
 [file_access github_repo="littlebizzy/private-plugin" github_tag="v2.0.0"]
 ```
 
-### Exact Release Asset
+The exact published stable release must exist. A missing tag does not fall back to the latest release.
+
+### Exact Uploaded Asset
 
 ```text
 [file_access github_repo="littlebizzy/private-plugin" github_asset="private-plugin.zip"]
 ```
 
-### Exact Tag and Asset
+This downloads the exact uploaded ZIP asset from the latest published stable release.
+
+### Exact Tag and Uploaded Asset
 
 ```text
 [file_access github_repo="littlebizzy/private-plugin" github_tag="v2.0.0" github_asset="private-plugin.zip"]
 ```
 
-The asset name must match the uploaded ZIP asset exactly. When multiple ZIP assets exist and `github_asset` is omitted, the download stops with an explanatory error.
+The asset name must exactly match an uploaded ZIP asset in the selected release. A missing named asset does not fall back to the generated archive.
 
 ## Access Examples
 
