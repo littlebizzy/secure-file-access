@@ -5,7 +5,7 @@ Secure File Access replaces the destination in the page HTML with a short-lived 
 The plugin supports two download sources:
 
 - a normal HTTP or HTTPS URL
-- a GitHub Release ZIP asset
+- a generated GitHub Release ZIP archive or an explicitly named uploaded ZIP asset
 
 The plugin does not permanently host or copy either source.
 
@@ -85,22 +85,25 @@ GitHub downloads use the saved `sfa_github_token` only on the WordPress server.
 When the protected link is opened, the plugin:
 
 1. requests the latest published stable GitHub Release, or the exact release supplied by `github_tag`
-2. ignores draft and prerelease releases
-3. finds uploaded ZIP release assets
-4. selects the ZIP automatically when exactly one exists
-5. requires `github_asset` when multiple ZIP assets exist
-6. requests the selected asset through the authenticated GitHub API
-7. redirects the browser to GitHub's temporary download URL
+2. rejects draft and prerelease releases
+3. uses the release tag's generated ZIP archive when `github_asset` is omitted
+4. requires an exact uploaded ZIP asset when `github_asset` is supplied
+5. requests the selected archive or asset through the authenticated GitHub API
+6. redirects the browser to GitHub's temporary download URL
+
+A supplied `github_tag` must match an exact published stable release. A missing tag does not fall back to the latest release.
+
+A supplied `github_asset` must exactly match an uploaded ZIP asset in the selected release. A missing asset does not fall back to the generated archive.
 
 The plugin does not proxy or stream the ZIP through PHP. This avoids PHP memory limits, execution timeouts, and large temporary files.
 
-GitHub's asset API can return either a temporary redirect or the file body directly. Secure File Access requires the temporary redirect and stops with an error rather than downloading a directly streamed asset through WordPress.
+Secure File Access requests the archive or asset with redirects disabled and requires GitHub to return a temporary redirect. It stops with an error rather than downloading a directly streamed ZIP through WordPress.
 
 The temporary redirect must use HTTPS, include a valid host, contain no embedded username or password, and pass WordPress URL safety validation. An invalid redirect is rejected instead of being sent to the browser.
 
 The GitHub personal access token is never added to the protected link or redirect URL. The final temporary GitHub URL may be visible to the authorized user's browser after the redirect and expires according to GitHub's own handling.
 
-GitHub release metadata is resolved when the protected link is opened. Secure File Access does not cache release or asset metadata.
+GitHub release metadata is resolved when the protected link is opened. Secure File Access does not cache release, archive, or asset metadata.
 
 ## GitHub Errors
 
@@ -111,22 +114,22 @@ Secure File Access distinguishes:
 - a rejected token
 - an API rate limit
 - access denied by GitHub
-- a missing or inaccessible repository, release, or asset
+- a missing or inaccessible repository, release, archive, or asset
 - a temporary GitHub server failure
 
 The plugin does not automatically retry failed GitHub requests. Reloading the WordPress page creates a new protected link when the user still has access.
 
-## GitHub Asset Selection
+## GitHub Release Selection
 
 When `github_tag` is omitted, the repository's latest published stable GitHub Release is used. A Git tag without an associated GitHub Release is not considered.
 
-When `github_asset` is omitted:
+When `github_tag` is supplied, that exact published stable release must exist. The plugin does not fall back to the latest release.
 
-- exactly one ZIP asset is selected automatically
-- no ZIP assets produces an error
-- multiple ZIP assets produces an error asking for `github_asset`
+When `github_asset` is omitted, the plugin downloads GitHub's generated ZIP archive for the selected release tag. Uploaded release assets are not selected automatically.
 
-When `github_asset` is supplied, its filename must exactly match an uploaded ZIP asset in the selected release.
+When `github_asset` is supplied, its filename must exactly match an uploaded ZIP asset in the selected release. The plugin does not fall back to the generated archive when the named asset is missing.
+
+A generated source archive can differ from a custom uploaded package because it reflects the repository contents at the release tag.
 
 ## Privacy and Caching
 
