@@ -95,9 +95,29 @@ A supplied `github_tag` must match an exact published stable release. A missing 
 
 A supplied `github_asset` must exactly match an uploaded ZIP asset in the selected release. A missing asset does not fall back to the generated archive.
 
-The plugin does not proxy or stream the ZIP through PHP. This avoids PHP memory limits, execution timeouts, and large temporary files.
+The plugin does not proxy or stream the ZIP through PHP. This avoids PHP memory limits, execution timeouts, server bandwidth use, and temporary-file handling.
 
 Secure File Access requests the archive or asset with redirects disabled and requires GitHub to return a temporary redirect. It stops with an error rather than downloading a directly streamed ZIP through WordPress.
+
+### GitHub Response Handling
+
+The release metadata request must return `200 OK` because the plugin needs the release information from its JSON response. The later archive or asset download request is handled differently: it must return `301`, `302`, `303`, `307`, or `308` with a valid `Location` header so the visitor can download directly from GitHub.
+
+For the archive or asset download request, common responses are handled as follows:
+
+| Response | Handling | Reason |
+| --- | --- | --- |
+| `200 OK` | Rejected | The ZIP is being returned directly and would need to be proxied or streamed through WordPress. |
+| `204 No Content` | Rejected | No ZIP body or temporary download URL is available. |
+| `206 Partial Content` | Rejected | The partial ZIP body would need to be proxied through WordPress. |
+| `304 Not Modified` | Rejected | The plugin does not use a cached GitHub download response and receives no new temporary URL. |
+| `400 Bad Request` or `422 Unprocessable Content` | Rejected | GitHub did not accept the archive or asset request. |
+| `401 Unauthorized` | Rejected | The configured GitHub token was rejected. |
+| `403 Forbidden` | Rejected | GitHub denied access or reported a rate limit. |
+| `404 Not Found` | Rejected | The repository, release, archive, or asset is missing or inaccessible. |
+| `429 Too Many Requests` | Rejected | GitHub's API rate limit was reached. |
+| `500`–`599` | Rejected | GitHub reported a temporary server failure. |
+| Any other response | Rejected | Only the accepted redirect responses provide the direct GitHub download flow required by the plugin. |
 
 The temporary redirect must use HTTPS, include a valid host, contain no embedded username or password, and pass WordPress URL safety validation. An invalid redirect is rejected instead of being sent to the browser.
 
