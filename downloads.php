@@ -267,11 +267,16 @@ function sfa_get_github_release( $repository, $tag ) {
 		return new WP_Error( 'sfa_github_release_unavailable', __( 'The selected GitHub release does not provide a valid tag.', 'secure-file-access' ) );
 	}
 
+	$assets = array();
+	if ( isset( $release['assets'] ) && is_array( $release['assets'] ) ) {
+		$assets = $release['assets'];
+	}
+
 	return array(
 		'owner' => $owner,
 		'repo' => $repo,
 		'tag' => $release['tag_name'],
-		'assets' => isset( $release['assets'] ) && is_array( $release['assets'] ) ? $release['assets'] : array(),
+		'assets' => $assets,
 	);
 }
 
