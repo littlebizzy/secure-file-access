@@ -51,7 +51,7 @@ Override the configured access defaults and GitHub release selection:
 
 ### 1.5.5
 - downloads GitHub's generated ZIP archive for the selected release when `github_asset` is omitted
-- requires exact published release tags and exact named uploaded ZIP assets without falling back when either is missing
+- fails when a specified release tag or named uploaded ZIP asset does not exist, without falling back
 - preserves authenticated temporary redirects for generated archives and uploaded assets
 
 ### 1.5.4
