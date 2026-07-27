@@ -420,18 +420,380 @@ function sfa_get_github_release_archive_url( $release ) {
 	);
 }
 
-// resolve one github release to an exact asset or generated tag archive
-function sfa_get_github_release_download_url( $repository, $tag, $asset_name ) {
+// delete one temporary file or directory tree
+function sfa_remove_temporary_path( $path ) {
+	if ( ! is_string( $path ) || '' === $path || ( ! file_exists( $path ) && ! is_link( $path ) ) ) {
+		return;
+	}
+
+	if ( is_link( $path ) || is_file( $path ) ) {
+		wp_delete_file( $path );
+		return;
+	}
+
+	$items = scandir( $path );
+	if ( ! is_array( $items ) ) {
+		return;
+	}
+
+	foreach ( $items as $item ) {
+		if ( '.' === $item || '..' === $item ) {
+			continue;
+		}
+
+		sfa_remove_temporary_path( $path . DIRECTORY_SEPARATOR . $item );
+	}
+
+	rmdir( $path );
+}
+
+// register cleanup for one temporary path at request shutdown
+function sfa_register_temporary_path( $path ) {
+	register_shutdown_function( 'sfa_remove_temporary_path', $path );
+}
+
+// create a private temporary workspace
+function sfa_create_temporary_workspace() {
+	$temp_dir = trailingslashit( get_temp_dir() );
+
+	for ( $attempt = 0; $attempt < 3; $attempt++ ) {
+		$workspace = $temp_dir . 'sfa-' . strtolower( wp_generate_password( 16, false, false ) );
+
+		if ( ! file_exists( $workspace ) && wp_mkdir_p( $workspace ) ) {
+			chmod( $workspace, 0700 );
+			sfa_register_temporary_path( $workspace );
+			return $workspace;
+		}
+	}
+
+	return new WP_Error( 'sfa_github_archive_workspace', __( 'WordPress could not create a temporary directory for this GitHub archive.', 'secure-file-access' ) );
+}
+
+// validate one archive entry and return its top-level directory
+function sfa_validate_github_archive_entry( $entry_name ) {
+	if ( ! is_string( $entry_name ) || '' === $entry_name || false !== strpos( $entry_name, "\0" ) || false !== strpos( $entry_name, '\\' ) ) {
+		return '';
+	}
+
+	if ( '/' === substr( $entry_name, 0, 1 ) || preg_match( '/\A[A-Za-z]:\//', $entry_name ) ) {
+		return '';
+	}
+
+	$entry_name = rtrim( $entry_name, '/' );
+	if ( '' === $entry_name || 0 !== validate_file( $entry_name ) ) {
+		return '';
+	}
+
+	$parts = explode( '/', $entry_name );
+	foreach ( $parts as $part ) {
+		if ( '' === $part || '.' === $part || '..' === $part ) {
+			return '';
+		}
+	}
+
+	return $parts[0];
+}
+
+// inspect a generated archive and require one safe root directory
+function sfa_get_github_archive_root( $archive_path ) {
+	$root = '';
+	$entry_count = 0;
+
+	if ( class_exists( 'ZipArchive' ) ) {
+		$archive = new ZipArchive();
+		$opened = $archive->open( $archive_path, ZipArchive::CHECKCONS );
+		if ( true !== $opened ) {
+			return new WP_Error( 'sfa_github_archive_invalid', __( 'GitHub returned an invalid ZIP archive.', 'secure-file-access' ) );
+		}
+
+		for ( $index = 0; $index < $archive->numFiles; $index++ ) {
+			$entry = $archive->statIndex( $index );
+			if ( ! is_array( $entry ) || empty( $entry['name'] ) ) {
+				$archive->close();
+				return new WP_Error( 'sfa_github_archive_invalid', __( 'GitHub returned an invalid ZIP archive.', 'secure-file-access' ) );
+			}
+
+			$entry_root = sfa_validate_github_archive_entry( $entry['name'] );
+			if ( '' === $entry_root ) {
+				$archive->close();
+				return new WP_Error( 'sfa_github_archive_unsafe', __( 'The GitHub ZIP archive contains an unsafe file path.', 'secure-file-access' ) );
+			}
+
+			if ( '' === $root ) {
+				$root = $entry_root;
+			} elseif ( $root !== $entry_root ) {
+				$archive->close();
+				return new WP_Error( 'sfa_github_archive_roots', __( 'The GitHub ZIP archive does not contain exactly one root directory.', 'secure-file-access' ) );
+			}
+
+			if ( method_exists( $archive, 'getExternalAttributesIndex' ) ) {
+				$operating_system = 0;
+				$attributes = 0;
+
+				if ( $archive->getExternalAttributesIndex( $index, $operating_system, $attributes ) && 3 === $operating_system ) {
+					$file_type = ( $attributes >> 16 ) & 0170000;
+					if ( 0120000 === $file_type ) {
+						$archive->close();
+						return new WP_Error( 'sfa_github_archive_symlink', __( 'The GitHub ZIP archive contains a symbolic link.', 'secure-file-access' ) );
+					}
+				}
+			}
+
+			$entry_count++;
+		}
+
+		$archive->close();
+	} else {
+		require_once ABSPATH . 'wp-admin/includes/class-pclzip.php';
+		$archive = new PclZip( $archive_path );
+		$entries = $archive->listContent();
+
+		if ( ! is_array( $entries ) ) {
+			return new WP_Error( 'sfa_github_archive_invalid', __( 'GitHub returned an invalid ZIP archive.', 'secure-file-access' ) );
+		}
+
+		foreach ( $entries as $entry ) {
+			if ( ! is_array( $entry ) || empty( $entry['filename'] ) ) {
+				return new WP_Error( 'sfa_github_archive_invalid', __( 'GitHub returned an invalid ZIP archive.', 'secure-file-access' ) );
+			}
+
+			$entry_root = sfa_validate_github_archive_entry( $entry['filename'] );
+			if ( '' === $entry_root ) {
+				return new WP_Error( 'sfa_github_archive_unsafe', __( 'The GitHub ZIP archive contains an unsafe file path.', 'secure-file-access' ) );
+			}
+
+			if ( '' === $root ) {
+				$root = $entry_root;
+			} elseif ( $root !== $entry_root ) {
+				return new WP_Error( 'sfa_github_archive_roots', __( 'The GitHub ZIP archive does not contain exactly one root directory.', 'secure-file-access' ) );
+			}
+
+			$entry_count++;
+		}
+	}
+
+	if ( '' === $root || 0 === $entry_count ) {
+		return new WP_Error( 'sfa_github_archive_empty', __( 'GitHub returned an empty ZIP archive.', 'secure-file-access' ) );
+	}
+
+	return $root;
+}
+
+// extract one validated archive into a temporary directory
+function sfa_extract_github_archive( $archive_path, $destination ) {
+	if ( ! wp_mkdir_p( $destination ) ) {
+		return new WP_Error( 'sfa_github_archive_extract_dir', __( 'WordPress could not create a temporary extraction directory.', 'secure-file-access' ) );
+	}
+
+	if ( class_exists( 'ZipArchive' ) ) {
+		$archive = new ZipArchive();
+		$opened = $archive->open( $archive_path, ZipArchive::CHECKCONS );
+		if ( true !== $opened ) {
+			return new WP_Error( 'sfa_github_archive_invalid', __( 'GitHub returned an invalid ZIP archive.', 'secure-file-access' ) );
+		}
+
+		$extracted = $archive->extractTo( $destination );
+		$archive->close();
+
+		if ( ! $extracted ) {
+			return new WP_Error( 'sfa_github_archive_extract', __( 'WordPress could not extract the GitHub ZIP archive.', 'secure-file-access' ) );
+		}
+	} else {
+		require_once ABSPATH . 'wp-admin/includes/class-pclzip.php';
+		$archive = new PclZip( $archive_path );
+		$extracted = $archive->extract( PCLZIP_OPT_PATH, $destination );
+
+		if ( ! is_array( $extracted ) || empty( $extracted ) ) {
+			return new WP_Error( 'sfa_github_archive_extract', __( 'WordPress could not extract the GitHub ZIP archive.', 'secure-file-access' ) );
+		}
+	}
+
+	return true;
+}
+
+// reject symbolic links anywhere inside an extracted directory
+function sfa_github_archive_has_symlink( $directory ) {
+	$iterator = new RecursiveIteratorIterator(
+		new RecursiveDirectoryIterator( $directory, FilesystemIterator::SKIP_DOTS ),
+		RecursiveIteratorIterator::SELF_FIRST
+	);
+
+	foreach ( $iterator as $item ) {
+		if ( $item->isLink() ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// create a normalized zip containing the repository directory
+function sfa_create_normalized_github_zip( $repository_directory, $workspace, $output_path ) {
+	$repository_name = basename( $repository_directory );
+
+	if ( class_exists( 'ZipArchive' ) ) {
+		$archive = new ZipArchive();
+		$opened = $archive->open( $output_path, ZipArchive::CREATE | ZipArchive::OVERWRITE );
+		if ( true !== $opened ) {
+			return new WP_Error( 'sfa_github_archive_create', __( 'WordPress could not create the normalized GitHub ZIP archive.', 'secure-file-access' ) );
+		}
+
+		if ( ! $archive->addEmptyDir( $repository_name ) ) {
+			$archive->close();
+			return new WP_Error( 'sfa_github_archive_create', __( 'WordPress could not create the normalized GitHub ZIP archive.', 'secure-file-access' ) );
+		}
+
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator( $repository_directory, FilesystemIterator::SKIP_DOTS ),
+			RecursiveIteratorIterator::SELF_FIRST
+		);
+
+		foreach ( $iterator as $item ) {
+			if ( $item->isLink() ) {
+				$archive->close();
+				return new WP_Error( 'sfa_github_archive_symlink', __( 'The GitHub ZIP archive contains a symbolic link.', 'secure-file-access' ) );
+			}
+
+			$relative_path = substr( $item->getPathname(), strlen( $repository_directory ) + 1 );
+			$archive_path = $repository_name . '/' . str_replace( DIRECTORY_SEPARATOR, '/', $relative_path );
+
+			if ( $item->isDir() ) {
+				$added = $archive->addEmptyDir( $archive_path );
+			} else {
+				$added = $archive->addFile( $item->getPathname(), $archive_path );
+			}
+
+			if ( ! $added ) {
+				$archive->close();
+				return new WP_Error( 'sfa_github_archive_create', __( 'WordPress could not create the normalized GitHub ZIP archive.', 'secure-file-access' ) );
+			}
+		}
+
+		if ( ! $archive->close() ) {
+			return new WP_Error( 'sfa_github_archive_create', __( 'WordPress could not create the normalized GitHub ZIP archive.', 'secure-file-access' ) );
+		}
+	} else {
+		require_once ABSPATH . 'wp-admin/includes/class-pclzip.php';
+		$archive = new PclZip( $output_path );
+		$created = $archive->create(
+			$repository_directory,
+			PCLZIP_OPT_REMOVE_PATH,
+			$workspace
+		);
+
+		if ( ! is_array( $created ) || empty( $created ) ) {
+			return new WP_Error( 'sfa_github_archive_create', __( 'WordPress could not create the normalized GitHub ZIP archive.', 'secure-file-access' ) );
+		}
+	}
+
+	if ( ! is_file( $output_path ) || 0 >= filesize( $output_path ) ) {
+		return new WP_Error( 'sfa_github_archive_create', __( 'WordPress could not create the normalized GitHub ZIP archive.', 'secure-file-access' ) );
+	}
+
+	return true;
+}
+
+// download and normalize one generated github release archive
+function sfa_prepare_github_release_archive( $release ) {
+	if ( ! is_array( $release ) || empty( $release['repo'] ) || in_array( $release['repo'], array( '.', '..' ), true ) ) {
+		return new WP_Error( 'sfa_github_archive_unavailable', __( 'The GitHub release archive could not be prepared.', 'secure-file-access' ) );
+	}
+
+	$archive_url = sfa_get_github_release_archive_url( $release );
+	if ( is_wp_error( $archive_url ) ) {
+		return $archive_url;
+	}
+
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	$source_archive = download_url( $archive_url, 300 );
+	if ( is_wp_error( $source_archive ) ) {
+		return new WP_Error( 'sfa_github_archive_download', __( 'WordPress could not download the GitHub ZIP archive.', 'secure-file-access' ) );
+	}
+	sfa_register_temporary_path( $source_archive );
+
+	$archive_root = sfa_get_github_archive_root( $source_archive );
+	if ( is_wp_error( $archive_root ) ) {
+		return $archive_root;
+	}
+
+	$workspace = sfa_create_temporary_workspace();
+	if ( is_wp_error( $workspace ) ) {
+		return $workspace;
+	}
+
+	$extraction_directory = $workspace . DIRECTORY_SEPARATOR . 'extract';
+	$extracted = sfa_extract_github_archive( $source_archive, $extraction_directory );
+	if ( is_wp_error( $extracted ) ) {
+		return $extracted;
+	}
+
+	wp_delete_file( $source_archive );
+
+	$entries = scandir( $extraction_directory );
+	if ( ! is_array( $entries ) ) {
+		return new WP_Error( 'sfa_github_archive_extract', __( 'WordPress could not inspect the extracted GitHub archive.', 'secure-file-access' ) );
+	}
+	$entries = array_values( array_diff( $entries, array( '.', '..' ) ) );
+
+	if (
+		1 !== count( $entries ) ||
+		$archive_root !== $entries[0] ||
+		! is_dir( $extraction_directory . DIRECTORY_SEPARATOR . $entries[0] ) ||
+		is_link( $extraction_directory . DIRECTORY_SEPARATOR . $entries[0] )
+	) {
+		return new WP_Error( 'sfa_github_archive_roots', __( 'The GitHub ZIP archive does not contain exactly one root directory.', 'secure-file-access' ) );
+	}
+
+	$extracted_root = $extraction_directory . DIRECTORY_SEPARATOR . $entries[0];
+	if ( sfa_github_archive_has_symlink( $extracted_root ) ) {
+		return new WP_Error( 'sfa_github_archive_symlink', __( 'The GitHub ZIP archive contains a symbolic link.', 'secure-file-access' ) );
+	}
+
+	$repository_directory = $workspace . DIRECTORY_SEPARATOR . $release['repo'];
+	if ( ! rename( $extracted_root, $repository_directory ) ) {
+		return new WP_Error( 'sfa_github_archive_rename', __( 'WordPress could not rename the GitHub archive root directory.', 'secure-file-access' ) );
+	}
+
+	rmdir( $extraction_directory );
+	$output_path = $workspace . DIRECTORY_SEPARATOR . $release['repo'] . '.zip';
+	$created = sfa_create_normalized_github_zip( $repository_directory, $workspace, $output_path );
+	if ( is_wp_error( $created ) ) {
+		return $created;
+	}
+
+	return array(
+		'path' => $output_path,
+		'filename' => $release['repo'] . '.zip',
+		'workspace' => $workspace,
+	);
+}
+
+// resolve one github release to an uploaded asset or normalized archive
+function sfa_get_github_release_download( $repository, $tag, $asset_name ) {
 	$release = sfa_get_github_release( $repository, $tag );
 	if ( is_wp_error( $release ) ) {
 		return $release;
 	}
 
 	if ( '' !== $asset_name ) {
-		return sfa_get_github_release_asset_url( $release, $asset_name );
+		$url = sfa_get_github_release_asset_url( $release, $asset_name );
+		if ( is_wp_error( $url ) ) {
+			return $url;
+		}
+
+		return array(
+			'type' => 'redirect',
+			'url' => $url,
+		);
 	}
 
-	return sfa_get_github_release_archive_url( $release );
+	$archive = sfa_prepare_github_release_archive( $release );
+	if ( is_wp_error( $archive ) ) {
+		return $archive;
+	}
+	$archive['type'] = 'file';
+
+	return $archive;
 }
 
 // send headers that prevent protected download responses from being cached or referred
@@ -454,6 +816,53 @@ function sfa_stop_protected_download( $message ) {
 		esc_html__( 'Download unavailable', 'secure-file-access' ),
 		array( 'response' => 403 )
 	);
+}
+
+// stream one normalized github archive to the authorized user
+function sfa_send_github_release_archive( $archive ) {
+	if (
+		! is_array( $archive ) ||
+		empty( $archive['path'] ) ||
+		empty( $archive['filename'] ) ||
+		empty( $archive['workspace'] ) ||
+		! is_file( $archive['path'] )
+	) {
+		return new WP_Error( 'sfa_github_archive_send', __( 'The normalized GitHub ZIP archive is unavailable.', 'secure-file-access' ) );
+	}
+
+	$file_size = filesize( $archive['path'] );
+	if ( false === $file_size || 0 >= $file_size ) {
+		return new WP_Error( 'sfa_github_archive_send', __( 'The normalized GitHub ZIP archive is unavailable.', 'secure-file-access' ) );
+	}
+
+	$handle = fopen( $archive['path'], 'rb' );
+	if ( false === $handle ) {
+		return new WP_Error( 'sfa_github_archive_send', __( 'WordPress could not open the normalized GitHub ZIP archive.', 'secure-file-access' ) );
+	}
+
+	while ( ob_get_level() ) {
+		ob_end_clean();
+	}
+
+	sfa_send_protected_download_headers();
+	header( 'Content-Type: application/zip', true );
+	header( 'Content-Disposition: attachment; filename="' . $archive['filename'] . '"', true );
+	header( 'Content-Length: ' . $file_size, true );
+	header( 'X-Content-Type-Options: nosniff', true );
+
+	while ( ! feof( $handle ) ) {
+		$buffer = fread( $handle, 1048576 );
+		if ( false === $buffer ) {
+			break;
+		}
+
+		echo $buffer;
+		flush();
+	}
+
+	fclose( $handle );
+	sfa_remove_temporary_path( $archive['workspace'] );
+	exit;
 }
 
 // process protected download requests
@@ -518,15 +927,20 @@ function sfa_handle_protected_download() {
 		$source = sanitize_key( $download['source'] );
 	}
 
+	$github_download = array();
 	if ( 'github' === $source ) {
 		if ( ! isset( $download['github_repo'] ) || ! isset( $download['github_tag'] ) || ! isset( $download['github_asset'] ) ) {
 			delete_transient( $transient_key );
 			sfa_stop_protected_download( __( 'This download link is invalid or has expired.', 'secure-file-access' ) );
 		}
 
-		$url = sfa_get_github_release_download_url( $download['github_repo'], $download['github_tag'], $download['github_asset'] );
-		if ( is_wp_error( $url ) ) {
-			sfa_stop_protected_download( $url->get_error_message() );
+		$github_download = sfa_get_github_release_download( $download['github_repo'], $download['github_tag'], $download['github_asset'] );
+		if ( is_wp_error( $github_download ) ) {
+			sfa_stop_protected_download( $github_download->get_error_message() );
+		}
+
+		if ( empty( $github_download['type'] ) || ! in_array( $github_download['type'], array( 'redirect', 'file' ), true ) ) {
+			sfa_stop_protected_download( __( 'The GitHub release download could not be prepared.', 'secure-file-access' ) );
 		}
 	} elseif ( 'url' === $source ) {
 		if ( ! isset( $download['url'] ) ) {
@@ -547,8 +961,19 @@ function sfa_handle_protected_download() {
 
 	// make the protected link single-use after all checks pass
 	delete_transient( $transient_key );
-	sfa_send_protected_download_headers();
 
+	if ( 'github' === $source && 'file' === $github_download['type'] ) {
+		$sent = sfa_send_github_release_archive( $github_download );
+		if ( is_wp_error( $sent ) ) {
+			sfa_stop_protected_download( $sent->get_error_message() );
+		}
+	}
+
+	if ( 'github' === $source ) {
+		$url = $github_download['url'];
+	}
+
+	sfa_send_protected_download_headers();
 	wp_redirect( $url, 302, 'Secure File Access' );
 	exit;
 }
