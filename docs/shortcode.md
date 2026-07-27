@@ -16,7 +16,16 @@ Secure File Access uses the `[file_access]` shortcode to display a protected dow
 
 When `github_tag` is omitted, the plugin uses the repository's latest published stable GitHub Release. Drafts, prereleases, and Git tags without an associated GitHub Release are not used.
 
-When `github_asset` is omitted, the plugin downloads GitHub's generated ZIP archive for the selected release tag.
+When `github_asset` is omitted, the plugin downloads GitHub's generated ZIP archive, rebuilds it with the repository name as the ZIP filename and internal root folder, and streams it through WordPress.
+
+For `littlebizzy/private-plugin`, the generated result is:
+
+```text
+private-plugin.zip
+└── private-plugin/
+```
+
+When `github_asset` is supplied, the exact uploaded ZIP asset is redirected directly from GitHub without renaming or rebuilding it.
 
 The visitor must be logged in and have access through an allowed WordPress role, a recorded WooCommerce product purchase, an eligible WooCommerce subscription, or the `manage_options` capability.
 
@@ -25,9 +34,9 @@ The visitor must be logged in and have access through an allowed WordPress role,
 | Attribute | Required | Description |
 | --- | --- | --- |
 | `url` | One source required | HTTP or HTTPS destination for a normal protected download. |
-| `github_repo` | One source required | GitHub repository in `owner/repository` format. |
+| `github_repo` | One source required | GitHub repository in `owner/repository` format. The repository portion becomes the generated archive filename and root folder. |
 | `github_tag` | No | Exact published stable release tag. Uses the latest stable release when omitted. |
-| `github_asset` | No | Exact uploaded ZIP release asset filename. Uses the selected release tag's generated ZIP archive when omitted. |
+| `github_asset` | No | Exact uploaded ZIP release asset filename. Omitting it selects and normalizes the selected release tag's generated ZIP archive. |
 | `label` | No | Download link text. Uses the configured default label when omitted. |
 | `products` | No | Comma-separated WooCommerce product IDs. Overrides the configured default product IDs when non-empty. |
 | `roles` | No | Comma-separated WordPress role slugs. Overrides the configured default roles when non-empty. |
@@ -43,7 +52,7 @@ Exactly one source is required. Use either `url` or `github_repo`, not both. A m
 [file_access github_repo="littlebizzy/private-plugin"]
 ```
 
-This downloads GitHub's generated ZIP archive for the latest published stable release tag.
+This selects the latest published stable release, normalizes its generated archive, and downloads `private-plugin.zip` containing the root folder `private-plugin/`.
 
 ### Exact Release Archive
 
@@ -51,23 +60,37 @@ This downloads GitHub's generated ZIP archive for the latest published stable re
 [file_access github_repo="littlebizzy/private-plugin" github_tag="v2.0.0"]
 ```
 
-The exact published stable release must exist. A missing tag does not fall back to the latest release.
+The exact published stable release must exist. A missing tag does not fall back to the latest release. Its generated archive is normalized to `private-plugin.zip` containing `private-plugin/`.
 
 ### Exact Uploaded Asset
 
 ```text
-[file_access github_repo="littlebizzy/private-plugin" github_asset="private-plugin.zip"]
+[file_access github_repo="littlebizzy/private-plugin" github_asset="private-plugin-2.0.0.zip"]
 ```
 
-This downloads the exact uploaded ZIP asset from the latest published stable release.
+This redirects directly to the exact uploaded ZIP asset from the latest published stable release. Secure File Access does not change the uploaded asset's filename or contents.
 
 ### Exact Tag and Uploaded Asset
 
 ```text
-[file_access github_repo="littlebizzy/private-plugin" github_tag="v2.0.0" github_asset="private-plugin.zip"]
+[file_access github_repo="littlebizzy/private-plugin" github_tag="v2.0.0" github_asset="private-plugin-2.0.0.zip"]
 ```
 
 The asset name must exactly match an uploaded ZIP asset in the selected release. A missing named asset does not fall back to the generated archive.
+
+## Generated Archive Requirements
+
+Generated archives are prepared only after the protected link is opened and access is rechecked.
+
+WordPress must be able to:
+
+- write to its temporary directory
+- download GitHub's temporary archive URL
+- extract and rebuild ZIP files using `ZipArchive` or WordPress's bundled PclZip library
+- stream the rebuilt ZIP response
+- remove the temporary files and directories afterward
+
+Generated archives are not cached in version 1.6.0. Each successful protected request creates a new temporary package.
 
 ## Access Examples
 
@@ -124,7 +147,7 @@ The destination URL and GitHub token are not placed directly in the page HTML. A
 - is tied to the current user
 - expires after 15 minutes
 - rechecks login, user binding, `manage_options`, product purchases, roles, and subscriptions when opened
-- becomes invalid after a successful redirect
+- becomes invalid after a successful redirect or generated-archive preparation
 - uses private, non-cacheable responses without forwarding referrer information
 
 Only HTTP and HTTPS URL destinations are accepted. A non-empty URL that fails validation uses the configured Invalid File URL message. Missing, conflicting, or incomplete source attributes use the built-in Invalid Download Source message. GitHub downloads require a configured token with access to the selected repository.
