@@ -237,7 +237,7 @@ function sfa_get_github_release( $repository, $tag ) {
 		$api_url = 'https://api.github.com/repos/' . rawurlencode( $owner ) . '/' . rawurlencode( $repo ) . '/releases/tags/' . rawurlencode( $tag );
 	}
 
-	$response = wp_remote_get(
+	$response = wp_safe_remote_get(
 		$api_url,
 		array(
 			'timeout' => 15,
