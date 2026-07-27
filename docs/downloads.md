@@ -99,14 +99,15 @@ When `github_asset` is omitted, Secure File Access:
 
 1. requests GitHub's generated archive endpoint with redirects disabled
 2. validates GitHub's temporary HTTPS download URL
-3. downloads the generated ZIP to a WordPress temporary file
-4. requires the archive to contain exactly one safe root directory
-5. rejects unsafe paths and symbolic links
-6. extracts the archive into a private temporary workspace
-7. renames the generated root directory to the repository name
-8. rebuilds the ZIP with the repository name as both the filename and root directory
-9. streams the rebuilt ZIP to the authorized user
-10. removes the temporary source ZIP, extracted files, rebuilt ZIP, and workspace
+3. creates a unique private temporary workspace and requires `0700` permissions
+4. creates the source ZIP inside that workspace and safely streams GitHub's archive into it
+5. requires the archive to contain exactly one safe root directory
+6. rejects unsafe paths and symbolic links
+7. extracts the archive into the workspace's separate `source` directory
+8. moves and renames the generated root under `package/repository-name`
+9. rebuilds the ZIP with the repository name as both the filename and root directory
+10. streams the rebuilt ZIP to the authorized user
+11. removes the source ZIP, extracted files, rebuilt ZIP, and workspace
 
 For `littlebizzy/force-https`, the result is:
 
@@ -136,7 +137,7 @@ The release metadata request must return `200 OK` because the plugin needs the r
 
 The generated-archive and uploaded-asset API requests must return `301`, `302`, `303`, `307`, or `308` with a valid `Location` header. A direct `200 OK` response from either API endpoint is rejected because it would contain the ZIP body instead of the temporary URL expected by that stage.
 
-For generated archives only, WordPress then downloads the validated temporary URL. That later file request must return a successful ZIP response so the archive can be normalized locally.
+For generated archives only, WordPress then streams the validated temporary URL into the private workspace. That later file request must return `200 OK` with a non-empty ZIP file so the archive can be normalized locally.
 
 Common API responses are handled as follows:
 
@@ -193,7 +194,7 @@ A generated source archive reflects the repository contents at the release tag. 
 
 Generated archive processing requires a writable WordPress temporary directory and enough disk space for the downloaded ZIP, extracted files, and rebuilt ZIP.
 
-Temporary paths are unique per request and registered for shutdown cleanup. The plugin also removes them immediately after a completed stream when possible. Cleanup is attempted after failures and interrupted requests; no normalized archive cache is retained.
+The source ZIP is created inside the request's private `0700` workspace before GitHub content is written. The workspace path is unique per request and registered for shutdown cleanup. The plugin also removes it immediately after a completed stream when possible. Cleanup is attempted after failures and interrupted requests; no normalized archive cache is retained.
 
 ## Privacy and Caching
 
