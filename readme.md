@@ -62,6 +62,7 @@ Override the configured access defaults and GitHub release selection:
 - validates generated archives for one safe root directory, unsafe paths, and symbolic links before rebuilding them
 - separates extraction and package staging so repository names cannot collide with internal directories
 - requires private `0700` permissions before using a temporary archive workspace
+- streams generated source archives directly into the private workspace before validation and extraction
 - uses WordPress safe remote requests for GitHub release metadata and any followed redirects
 - preserves direct GitHub redirects for explicitly named uploaded ZIP assets
 
