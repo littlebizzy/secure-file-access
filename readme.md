@@ -4,7 +4,7 @@ Easy file downloads for WordPress
 
 ## Description
 
-Secure File Access creates protected download links using the `[file_access]` shortcode. Downloads can use a normal HTTP or HTTPS URL, a generated ZIP archive from a public or private GitHub Release, or an explicitly named uploaded ZIP asset.
+Secure File Access creates protected download links using the `[file_access]` shortcode. Downloads can use a normal HTTP or HTTPS URL, a normalized ZIP archive from a public or private GitHub Release, or an explicitly named uploaded ZIP asset.
 
 Visitors must be logged in, administrators always have access, and other users receive access when they match any configured WordPress role, purchased any configured WooCommerce product, or have an active or pending-cancel WooCommerce subscription for any configured product ID.
 
@@ -12,9 +12,16 @@ Default product IDs, subscription product IDs, WordPress roles, the download but
 
 WooCommerce and WooCommerce Subscriptions are optional. Product purchase checks require WooCommerce, while subscription checks require WooCommerce Subscriptions. If no product IDs, roles, or subscription product IDs are configured, only administrators receive access. Normal file URLs are sanitized and unsupported protocols are rejected before download links are rendered.
 
-Authorized downloads use a short-lived local `?download=` link instead of placing the destination URL or GitHub token in the page HTML. Each link is tied to the current user, expires after 15 minutes, rechecks access when requested, and becomes invalid after a successful redirect. Protected download responses are marked private and non-cacheable and do not forward referrer information.
+Authorized downloads use a short-lived local `?download=` link instead of placing the destination URL or GitHub token in the page HTML. Each link is tied to the current user, expires after 15 minutes, rechecks access when requested, and becomes invalid after a successful redirect or generated-archive preparation. Protected download responses are marked private and non-cacheable and do not forward referrer information.
 
-The **GitHub Access** tab stores one personal access token per WordPress site. GitHub shortcodes use the latest published stable release by default, can optionally require an exact release tag or uploaded ZIP asset, and resolve the generated archive or named asset to a temporary GitHub download URL without proxying the file through PHP.
+The **GitHub Access** tab stores one personal access token per WordPress site. GitHub shortcodes use the latest published stable release by default and can optionally require an exact release tag or uploaded ZIP asset. Generated archives are temporarily downloaded, rebuilt with the repository name as the ZIP filename and root folder, and streamed through WordPress. Explicitly named uploaded assets continue to redirect directly from GitHub.
+
+For example, `github_repo="littlebizzy/private-plugin"` without `github_asset` produces:
+
+```text
+private-plugin.zip
+└── private-plugin/
+```
 
 Normal URL usage:
 
