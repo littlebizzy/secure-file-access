@@ -12,7 +12,7 @@ Confirm that:
 - required plugins are active for the configured access method
 - the page was reloaded after changing settings, purchases, roles, subscriptions, release tags, uploaded assets, or GitHub credentials
 
-Protected links are tied to one user, expire after 15 minutes, and are deleted after a successful redirect. Reload the page to create a new link when the user still has access.
+Protected links are tied to one user, expire after 15 minutes, and become invalid after a successful redirect or generated-archive preparation. Reload the page to create a new link when the user still has access.
 
 ## Invalid Download Source
 
@@ -121,17 +121,66 @@ A specified `github_tag` that does not match a published stable release does not
 
 ## Generated Archive or Uploaded Asset
 
-When `github_asset` is omitted, Secure File Access downloads GitHub's generated ZIP archive for the selected release tag. No uploaded release asset is required.
+When `github_asset` is omitted, Secure File Access downloads and rebuilds GitHub's generated ZIP archive for the selected release tag. No uploaded release asset is required.
+
+The resulting filename and internal root folder use the repository name. For example:
+
+```text
+private-plugin.zip
+└── private-plugin/
+```
 
 When `github_asset` is supplied, the filename must exactly match an uploaded `.zip` asset in the selected release.
 
-Example:
-
 ```text
-[file_access github_repo="littlebizzy/private-plugin" github_asset="private-plugin.zip"]
+[file_access github_repo="littlebizzy/private-plugin" github_asset="private-plugin-2.0.0.zip"]
 ```
 
-The named asset receives priority and must exist. The plugin does not silently substitute the generated source archive.
+The named asset receives priority and must exist. It is redirected directly from GitHub without being renamed or rebuilt. The plugin does not silently substitute the generated source archive.
+
+## Generated Archive Cannot Be Prepared
+
+Generated archive processing requires WordPress to download, inspect, extract, rename, rebuild, and stream a temporary ZIP package.
+
+Confirm that:
+
+- the WordPress temporary directory exists and is writable
+- the server has enough temporary disk space for the source ZIP, extracted files, and rebuilt ZIP
+- PHP can create ZIP archives through `ZipArchive` or WordPress's bundled PclZip library
+- the generated GitHub archive is complete and valid
+- no security or hosting rule blocks temporary files, archive extraction, or streamed responses
+- the request has enough execution time to download and rebuild the package
+
+Secure File Access requires exactly one root directory in the generated archive. It rejects:
+
+- empty or malformed ZIP files
+- multiple top-level roots
+- files placed directly at the archive root
+- absolute paths, parent-directory traversal, Windows drive paths, or backslash paths
+- symbolic links
+
+The plugin changes only the ZIP filename and top-level directory name. It does not modify files inside the repository tree.
+
+## Downloaded ZIP Has the Wrong Name
+
+Generated archives should download as `repository.zip` and contain `repository/`.
+
+If the old GitHub-generated name such as `owner-repository-tag-hash.zip` still appears:
+
+- confirm that Secure File Access 1.6.0 or later is active
+- confirm that `github_asset` is omitted
+- reload the page to create a new protected link
+- clear any full-page or object cache that preserved an older shortcode response
+
+Explicitly uploaded assets keep the filename and internal structure chosen by their publisher.
+
+## Temporary Files Are Left Behind
+
+Generated archive paths are unique per request and registered for shutdown cleanup. The plugin also removes the workspace immediately after a completed stream when possible.
+
+Temporary files can remain when PHP or the server process is terminated before shutdown handlers run. Remove abandoned `sfa-...` directories from the configured WordPress temporary directory only after confirming that no download request is using them.
+
+Version 1.6.0 does not cache normalized archives, so persistent generated packages are not expected.
 
 ## GitHub Rate Limit or Temporary Failure
 
@@ -141,7 +190,7 @@ It does not automatically retry failed requests. Reload the WordPress page later
 
 ## GitHub Did Not Provide a Temporary Download URL
 
-Secure File Access requires GitHub's archive or asset API to return a temporary redirect. It does not proxy or stream a directly returned ZIP body through PHP.
+Secure File Access requires GitHub's generated-archive or uploaded-asset API request to return a temporary redirect. A direct ZIP body from that API stage is rejected.
 
 The temporary URL must:
 
@@ -149,6 +198,8 @@ The temporary URL must:
 - include a valid host
 - contain no embedded username or password
 - pass WordPress URL safety validation
+
+For a generated archive, WordPress downloads the validated temporary URL and rebuilds the package locally. For an uploaded asset, the authorized browser is redirected to the validated GitHub URL.
 
 A response that does not meet those requirements is rejected.
 
@@ -158,6 +209,7 @@ A response that does not meet those requirements is rejected.
 
 - more than 15 minutes passed
 - the link already completed a successful redirect
+- a generated archive was already prepared for that link
 - the temporary record was removed by WordPress or an object cache
 - the stored record is incomplete
 
