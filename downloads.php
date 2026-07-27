@@ -708,21 +708,40 @@ function sfa_prepare_github_release_archive( $release ) {
 		return $archive_url;
 	}
 
+	$workspace = sfa_create_temporary_workspace();
+	if ( is_wp_error( $workspace ) ) {
+		return $workspace;
+	}
+
 	require_once ABSPATH . 'wp-admin/includes/file.php';
-	$source_archive = download_url( $archive_url, 300 );
-	if ( is_wp_error( $source_archive ) ) {
+	$source_archive = wp_tempnam( 'github-archive.zip', $workspace );
+	if ( ! is_string( $source_archive ) || '' === $source_archive ) {
+		return new WP_Error( 'sfa_github_archive_download', __( 'WordPress could not create a private temporary file for the GitHub ZIP archive.', 'secure-file-access' ) );
+	}
+
+	if ( wp_normalize_path( $workspace ) !== wp_normalize_path( dirname( $source_archive ) ) ) {
+		wp_delete_file( $source_archive );
+		return new WP_Error( 'sfa_github_archive_download', __( 'WordPress could not create a private temporary file for the GitHub ZIP archive.', 'secure-file-access' ) );
+	}
+
+	$response = wp_safe_remote_get(
+		$archive_url,
+		array(
+			'timeout' => 300,
+			'redirection' => 5,
+			'decompress' => false,
+			'stream' => true,
+			'filename' => $source_archive,
+		)
+	);
+
+	if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) || ! is_file( $source_archive ) || 0 >= filesize( $source_archive ) ) {
 		return new WP_Error( 'sfa_github_archive_download', __( 'WordPress could not download the GitHub ZIP archive.', 'secure-file-access' ) );
 	}
-	sfa_register_temporary_path( $source_archive );
 
 	$archive_root = sfa_get_github_archive_root( $source_archive );
 	if ( is_wp_error( $archive_root ) ) {
 		return $archive_root;
-	}
-
-	$workspace = sfa_create_temporary_workspace();
-	if ( is_wp_error( $workspace ) ) {
-		return $workspace;
 	}
 
 	$source_directory = $workspace . DIRECTORY_SEPARATOR . 'source';
