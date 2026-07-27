@@ -60,11 +60,11 @@ Override the configured access defaults and GitHub release selection:
 - rebuilds generated GitHub release archives with the repository name as the ZIP filename and internal root folder
 - streams normalized generated archives through WordPress using temporary disk files without caching the rebuilt package
 - validates generated archives for one safe root directory, unsafe paths, and symbolic links before rebuilding them
-- separates extraction and package staging so repository names cannot collide with internal directories
-- requires private `0700` permissions before using a temporary archive workspace
-- streams generated source archives directly into the private workspace before validation and extraction
-- uses WordPress safe remote requests for GitHub release metadata and any followed redirects
-- preserves direct GitHub redirects for explicitly named uploaded ZIP assets
+- separates `source` and `package` staging directories so repository names cannot collide with internal paths
+- requires private `0700` workspace permissions and creates the source ZIP inside that workspace with `wp_tempnam()`
+- streams generated source archives with `wp_safe_remote_get()` before validation and extraction
+- uses `wp_safe_remote_get()` for GitHub release metadata and validates any followed redirects
+- preserves direct GitHub asset redirects, including `302 Found`, for explicitly named uploaded ZIP assets
 
 ### 1.5.5
 - downloads GitHub's generated ZIP archive for the selected release when `github_asset` is omitted
