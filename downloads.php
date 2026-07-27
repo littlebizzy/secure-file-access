@@ -714,7 +714,7 @@ function sfa_prepare_github_release_archive( $release ) {
 	}
 
 	require_once ABSPATH . 'wp-admin/includes/file.php';
-	$source_archive = wp_tempnam( 'github-archive.zip', $workspace );
+	$source_archive = wp_tempnam( 'github-archive.zip', trailingslashit( $workspace ) );
 	if ( ! is_string( $source_archive ) || '' === $source_archive ) {
 		return new WP_Error( 'sfa_github_archive_download', __( 'WordPress could not create a private temporary file for the GitHub ZIP archive.', 'secure-file-access' ) );
 	}
