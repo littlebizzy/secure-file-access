@@ -104,7 +104,7 @@ Default:
 Please log in to access this file.
 ```
 
-Invalid-source and GitHub-specific token, access, rate-limit, release, and asset errors use built-in translated messages and are not configurable.
+Invalid-source and GitHub-specific token, access, rate-limit, release, asset, archive-preparation, and streaming errors use built-in translated messages and are not configurable.
 
 ## GitHub Access
 
