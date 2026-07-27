@@ -56,6 +56,12 @@ Override the configured access defaults and GitHub release selection:
 
 ## Changelog
 
+### 1.6.0
+- rebuilds generated GitHub release archives with the repository name as the ZIP filename and internal root folder
+- streams normalized generated archives through WordPress using temporary disk files without caching the rebuilt package
+- validates generated archives for one safe root directory, unsafe paths, and symbolic links before rebuilding them
+- preserves direct GitHub redirects for explicitly named uploaded ZIP assets
+
 ### 1.5.5
 - downloads GitHub's generated ZIP archive for the selected release when `github_asset` is omitted
 - fails when a specified release tag or named uploaded ZIP asset does not exist, without falling back
