@@ -56,12 +56,15 @@ Override the configured access defaults and GitHub release selection:
 
 ## Changelog
 
+### 1.6.1
+- fixes private source ZIP creation by passing a trailing-slash workspace path to `wp_tempnam()`, preventing valid generated archives from failing the workspace containment check
+
 ### 1.6.0
 - rebuilds generated GitHub release archives with the repository name as the ZIP filename and internal root folder
 - streams normalized generated archives through WordPress using temporary disk files without caching the rebuilt package
 - validates generated archives for one safe root directory, unsafe paths, and symbolic links before rebuilding them
 - separates `source` and `package` staging directories so repository names cannot collide with internal paths
-- requires private `0700` workspace permissions and creates the source ZIP inside that workspace with `wp_tempnam()`
+- requires private `0700` workspace permissions before generated archive processing
 - streams generated source archives with `wp_safe_remote_get()` before validation and extraction
 - uses `wp_safe_remote_get()` for GitHub release metadata and validates any followed redirects
 - preserves direct GitHub asset redirects, including `302 Found`, for explicitly named uploaded ZIP assets
