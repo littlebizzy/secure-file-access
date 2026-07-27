@@ -25,7 +25,7 @@ private-plugin.zip
 └── private-plugin/
 ```
 
-When `github_asset` is supplied, the exact uploaded ZIP asset is redirected directly from GitHub without renaming or rebuilding it.
+When `github_asset` is supplied, the exact uploaded ZIP asset redirects directly when GitHub supplies a temporary URL or streams unchanged through WordPress when GitHub returns `200 OK`. It is not renamed or rebuilt.
 
 The visitor must be logged in and have access through an allowed WordPress role, a recorded WooCommerce product purchase, an eligible WooCommerce subscription, or the `manage_options` capability.
 
@@ -68,7 +68,7 @@ The exact published stable release must exist. A missing tag does not fall back 
 [file_access github_repo="littlebizzy/private-plugin" github_asset="private-plugin-2.0.0.zip"]
 ```
 
-This redirects directly to the exact uploaded ZIP asset from the latest published stable release. Secure File Access does not change the uploaded asset's filename or contents.
+This selects the exact uploaded ZIP asset from the latest published stable release. Secure File Access preserves the uploaded asset's filename and contents whether GitHub returns a temporary redirect or a direct `200 OK` response.
 
 ### Exact Tag and Uploaded Asset
 
@@ -90,7 +90,9 @@ WordPress must be able to:
 - stream the rebuilt ZIP response
 - remove the temporary files and directories afterward
 
-Generated archives are not cached in version 1.6.0. Each successful protected request creates a new temporary package.
+Generated archives are not cached. Each successful protected request creates a new temporary package.
+
+A direct `200 OK` uploaded asset also requires a writable temporary directory and enough space for one unchanged ZIP file. Redirected assets continue to transfer directly from GitHub.
 
 ## Access Examples
 
@@ -147,7 +149,7 @@ The destination URL and GitHub token are not placed directly in the page HTML. A
 - is tied to the current user
 - expires after 15 minutes
 - rechecks login, user binding, `manage_options`, product purchases, roles, and subscriptions when opened
-- becomes invalid after a successful redirect or generated-archive preparation
+- becomes invalid after a successful redirect or local GitHub ZIP preparation
 - uses private, non-cacheable responses without forwarding referrer information
 
 Only HTTP and HTTPS URL destinations are accepted. A non-empty URL that fails validation uses the configured Invalid File URL message. Missing, conflicting, or incomplete source attributes use the built-in Invalid Download Source message. GitHub downloads require a configured token with access to the selected repository.
