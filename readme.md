@@ -121,7 +121,7 @@ Override the configured access defaults and GitHub release selection:
 ### 1.2.0
 - replaces destination URLs in rendered shortcode HTML with 64-character, user-bound transient download tokens
 - expires protected download links after 15 minutes and invalidates them after a successful redirect
-- rechecks login, administrator capability, configured roles, and active or pending-cancel WooCommerce subscriptions when each download link is requested
+- rechecks login, administrator capability, configured roles, and active or pending-cancel WooCommerce subscriptions when each download is requested
 - sends private no-store cache headers and a no-referrer policy before redirecting to the sanitized HTTP or HTTPS destination
 
 ### 1.1.0
