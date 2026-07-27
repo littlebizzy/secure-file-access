@@ -725,15 +725,15 @@ function sfa_prepare_github_release_archive( $release ) {
 		return $workspace;
 	}
 
-	$extraction_directory = $workspace . DIRECTORY_SEPARATOR . 'extract';
-	$extracted = sfa_extract_github_archive( $source_archive, $extraction_directory );
+	$source_directory = $workspace . DIRECTORY_SEPARATOR . 'source';
+	$extracted = sfa_extract_github_archive( $source_archive, $source_directory );
 	if ( is_wp_error( $extracted ) ) {
 		return $extracted;
 	}
 
 	wp_delete_file( $source_archive );
 
-	$entries = scandir( $extraction_directory );
+	$entries = scandir( $source_directory );
 	if ( ! is_array( $entries ) ) {
 		return new WP_Error( 'sfa_github_archive_extract', __( 'WordPress could not inspect the extracted GitHub archive.', 'secure-file-access' ) );
 	}
@@ -742,25 +742,30 @@ function sfa_prepare_github_release_archive( $release ) {
 	if (
 		1 !== count( $entries ) ||
 		$archive_root !== $entries[0] ||
-		! is_dir( $extraction_directory . DIRECTORY_SEPARATOR . $entries[0] ) ||
-		is_link( $extraction_directory . DIRECTORY_SEPARATOR . $entries[0] )
+		! is_dir( $source_directory . DIRECTORY_SEPARATOR . $entries[0] ) ||
+		is_link( $source_directory . DIRECTORY_SEPARATOR . $entries[0] )
 	) {
 		return new WP_Error( 'sfa_github_archive_roots', __( 'The GitHub ZIP archive does not contain exactly one root directory.', 'secure-file-access' ) );
 	}
 
-	$extracted_root = $extraction_directory . DIRECTORY_SEPARATOR . $entries[0];
+	$extracted_root = $source_directory . DIRECTORY_SEPARATOR . $entries[0];
 	if ( sfa_github_archive_has_symlink( $extracted_root ) ) {
 		return new WP_Error( 'sfa_github_archive_symlink', __( 'The GitHub ZIP archive contains a symbolic link.', 'secure-file-access' ) );
 	}
 
-	$repository_directory = $workspace . DIRECTORY_SEPARATOR . $release['repo'];
+	$package_directory = $workspace . DIRECTORY_SEPARATOR . 'package';
+	if ( ! wp_mkdir_p( $package_directory ) ) {
+		return new WP_Error( 'sfa_github_archive_package_dir', __( 'WordPress could not create a temporary package directory.', 'secure-file-access' ) );
+	}
+
+	$repository_directory = $package_directory . DIRECTORY_SEPARATOR . $release['repo'];
 	if ( ! rename( $extracted_root, $repository_directory ) ) {
 		return new WP_Error( 'sfa_github_archive_rename', __( 'WordPress could not rename the GitHub archive root directory.', 'secure-file-access' ) );
 	}
 
-	rmdir( $extraction_directory );
+	rmdir( $source_directory );
 	$output_path = $workspace . DIRECTORY_SEPARATOR . $release['repo'] . '.zip';
-	$created = sfa_create_normalized_github_zip( $repository_directory, $workspace, $output_path );
+	$created = sfa_create_normalized_github_zip( $repository_directory, $package_directory, $output_path );
 	if ( is_wp_error( $created ) ) {
 		return $created;
 	}
