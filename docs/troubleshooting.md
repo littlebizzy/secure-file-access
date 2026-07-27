@@ -12,7 +12,7 @@ Confirm that:
 - required plugins are active for the configured access method
 - the page was reloaded after changing settings, purchases, roles, subscriptions, release tags, uploaded assets, or GitHub credentials
 
-Protected links are tied to one user, expire after 15 minutes, and become invalid after a successful redirect or generated-archive preparation. Reload the page to create a new link when the user still has access.
+Protected links are tied to one user, expire after 15 minutes, and become invalid after a successful redirect or local GitHub ZIP preparation. Reload the page to create a new link when the user still has access.
 
 ## Invalid Download Source
 
@@ -136,7 +136,7 @@ When `github_asset` is supplied, the filename must exactly match an uploaded `.z
 [file_access github_repo="littlebizzy/private-plugin" github_asset="private-plugin-2.0.0.zip"]
 ```
 
-The named asset receives priority and must exist. It is redirected directly from GitHub without being renamed or rebuilt. The plugin does not silently substitute the generated source archive.
+The named asset receives priority and must exist. It redirects directly when GitHub supplies a temporary URL or streams unchanged through WordPress when GitHub returns `200 OK`. It is not renamed or rebuilt, and the plugin does not silently substitute the generated source archive.
 
 ## Generated Archive Cannot Be Prepared
 
@@ -161,6 +161,19 @@ Secure File Access requires exactly one root directory in the generated archive.
 
 The plugin changes only the ZIP filename and top-level directory name. It does not modify files inside the repository tree.
 
+## Uploaded Asset Cannot Be Streamed
+
+A direct `200 OK` uploaded asset requires WordPress to write the unchanged ZIP into a private temporary workspace before sending it to the user.
+
+Confirm that:
+
+- the WordPress temporary directory exists and is writable
+- the server has enough temporary disk space for the uploaded ZIP
+- no security or hosting rule blocks temporary files or streamed responses
+- the request has enough execution time to download and stream the asset
+
+This temporary-file path is used only when GitHub returns the ZIP body directly. Temporary redirects continue to transfer the asset from GitHub to the authorized browser.
+
 ## Downloaded ZIP Has the Wrong Name
 
 Generated archives should download as `repository.zip` and contain `repository/`.
@@ -176,11 +189,11 @@ Explicitly uploaded assets keep the filename and internal structure chosen by th
 
 ## Temporary Files Are Left Behind
 
-Generated archive paths are unique per request and registered for shutdown cleanup. The plugin also removes the workspace immediately after a completed stream when possible.
+Temporary workspace paths are unique per request and registered for shutdown cleanup. The plugin also removes the workspace immediately after a completed local stream or redirect fallback when possible.
 
 Temporary files can remain when PHP or the server process is terminated before shutdown handlers run. Remove abandoned `sfa-...` directories from the configured WordPress temporary directory only after confirming that no download request is using them.
 
-Version 1.6.0 does not cache normalized archives, so persistent generated packages are not expected.
+Generated archives and direct `200 OK` uploaded assets are not cached, so persistent ZIP packages are not expected.
 
 ## GitHub Rate Limit or Temporary Failure
 
@@ -188,20 +201,20 @@ The plugin distinguishes GitHub rate limits and temporary GitHub server failures
 
 It does not automatically retry failed requests. Reload the WordPress page later to create a new protected link and try again.
 
-## GitHub Did Not Provide a Temporary Download URL
+## GitHub Download Response Is Unsupported
 
-Secure File Access requires GitHub's generated-archive or uploaded-asset API request to return a temporary redirect. A direct ZIP body from that API stage is rejected.
+The generated-archive API request must return a temporary redirect. A direct ZIP body from that endpoint is rejected because generated archives require the validated temporary-URL normalization flow.
 
-The temporary URL must:
+An uploaded-asset API request may return either a temporary redirect or a direct `200 OK` ZIP body. Other response forms are rejected.
+
+Every temporary URL must:
 
 - use HTTPS
 - include a valid host
 - contain no embedded username or password
 - pass WordPress URL safety validation
 
-For a generated archive, WordPress downloads the validated temporary URL and rebuilds the package locally. For an uploaded asset, the authorized browser is redirected to the validated GitHub URL.
-
-A response that does not meet those requirements is rejected.
+For a generated archive, WordPress downloads the validated temporary URL and rebuilds the package locally. For an uploaded asset, the authorized browser follows a validated redirect or WordPress streams a direct `200 OK` response unchanged through its private workspace.
 
 ## Protected Link Is Invalid or Expired
 
@@ -209,7 +222,7 @@ A response that does not meet those requirements is rejected.
 
 - more than 15 minutes passed
 - the link already completed a successful redirect
-- a generated archive was already prepared for that link
+- a local GitHub ZIP was already prepared for that link
 - the temporary record was removed by WordPress or an object cache
 - the stored record is incomplete
 
