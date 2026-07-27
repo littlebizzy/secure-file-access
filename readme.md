@@ -59,7 +59,7 @@ Override the configured access defaults and GitHub release selection:
 ### 1.6.1
 - fixes private source ZIP creation by passing a trailing-slash workspace path to `wp_tempnam()`, preventing valid generated archives from failing the workspace containment check
 - accepts direct `200 OK` GitHub release asset responses by streaming the unchanged ZIP through the private workspace while preserving temporary redirect handling
-- stops output-buffer cleanup when the active buffer cannot be removed, preventing a possible streaming loop
+- refuses ZIP streaming when an active output buffer cannot be removed, preventing a possible loop or buffered file response
 
 ### 1.6.0
 - rebuilds generated GitHub release archives with the repository name as the ZIP filename and internal root folder
@@ -121,7 +121,7 @@ Override the configured access defaults and GitHub release selection:
 ### 1.2.0
 - replaces destination URLs in rendered shortcode HTML with 64-character, user-bound transient download tokens
 - expires protected download links after 15 minutes and invalidates them after a successful redirect
-- rechecks login, administrator capability, configured roles, and active or pending-cancel WooCommerce subscriptions when each download is requested
+- rechecks login, administrator capability, configured roles, and active or pending-cancel WooCommerce subscriptions when each download link is requested
 - sends private no-store cache headers and a no-referrer policy before redirecting to the sanitized HTTP or HTTPS destination
 
 ### 1.1.0
