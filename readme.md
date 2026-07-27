@@ -14,7 +14,7 @@ WooCommerce and WooCommerce Subscriptions are optional. Product purchase checks 
 
 Authorized downloads use a short-lived local `?download=` link instead of placing the destination URL or GitHub token in the page HTML. Each link is tied to the current user, expires after 15 minutes, rechecks access when requested, and becomes invalid after a successful redirect or generated-archive preparation. Protected download responses are marked private and non-cacheable and do not forward referrer information.
 
-The **GitHub Access** tab stores one personal access token per WordPress site. GitHub shortcodes use the latest published stable release by default and can optionally require an exact release tag or uploaded ZIP asset. Generated archives are temporarily downloaded, rebuilt with the repository name as the ZIP filename and root folder, and streamed through WordPress. Explicitly named uploaded assets continue to redirect directly from GitHub.
+The **GitHub Access** tab stores one personal access token per WordPress site. GitHub shortcodes use the latest published stable release by default and can optionally require an exact release tag or uploaded ZIP asset. Generated archives are temporarily downloaded, rebuilt with the repository name as the ZIP filename and root folder, and streamed through WordPress. Explicitly named uploaded assets redirect directly when GitHub supplies a temporary URL or stream unchanged through WordPress when GitHub returns `200 OK`.
 
 For example, `github_repo="littlebizzy/private-plugin"` without `github_asset` produces:
 
@@ -58,6 +58,8 @@ Override the configured access defaults and GitHub release selection:
 
 ### 1.6.1
 - fixes private source ZIP creation by passing a trailing-slash workspace path to `wp_tempnam()`, preventing valid generated archives from failing the workspace containment check
+- accepts direct `200 OK` GitHub release asset responses by streaming the unchanged ZIP through the private workspace while preserving temporary redirect handling
+- stops output-buffer cleanup when the active buffer cannot be removed, preventing a possible streaming loop
 
 ### 1.6.0
 - rebuilds generated GitHub release archives with the repository name as the ZIP filename and internal root folder
