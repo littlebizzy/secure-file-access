@@ -460,13 +460,17 @@ function sfa_create_temporary_workspace() {
 		$workspace = $temp_dir . 'sfa-' . strtolower( wp_generate_password( 16, false, false ) );
 
 		if ( ! file_exists( $workspace ) && wp_mkdir_p( $workspace ) ) {
-			chmod( $workspace, 0700 );
+			if ( ! chmod( $workspace, 0700 ) ) {
+				sfa_remove_temporary_path( $workspace );
+				continue;
+			}
+
 			sfa_register_temporary_path( $workspace );
 			return $workspace;
 		}
 	}
 
-	return new WP_Error( 'sfa_github_archive_workspace', __( 'WordPress could not create a temporary directory for this GitHub archive.', 'secure-file-access' ) );
+	return new WP_Error( 'sfa_github_archive_workspace', __( 'WordPress could not create a private temporary directory for this GitHub archive.', 'secure-file-access' ) );
 }
 
 // validate one archive entry and return its top-level directory
