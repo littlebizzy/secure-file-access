@@ -7,7 +7,7 @@ The plugin supports two download sources:
 - a normal HTTP or HTTPS URL
 - a generated GitHub Release ZIP archive or an explicitly named uploaded ZIP asset
 
-Normal URLs and uploaded GitHub assets are not copied by WordPress. Generated GitHub archives are downloaded, normalized, and streamed through WordPress using temporary files.
+Normal URLs are not copied by WordPress. Uploaded GitHub assets redirect directly when GitHub supplies a temporary URL or stream unchanged through a private temporary file when GitHub returns `200 OK`. Generated GitHub archives are downloaded, normalized, and streamed through WordPress using temporary files.
 
 ## How Downloads Work
 
@@ -27,7 +27,7 @@ Each protected download link expires after 15 minutes.
 
 The link becomes invalid sooner when:
 
-- it has already completed a successful redirect or generated-archive preparation
+- it has already completed a successful redirect or local GitHub ZIP preparation
 - its temporary record is removed by WordPress or an object cache
 - the stored download data is incomplete or invalid
 
@@ -118,26 +118,36 @@ force-https.zip
 
 The rebuilt archive is streamed from disk rather than assembled as one complete in-memory response. WordPress uses `ZipArchive` when available and its bundled PclZip library otherwise.
 
-Generated archives are rebuilt for each successful protected request. Version 1.6.0 does not cache normalized packages.
+Generated archives are rebuilt for each successful protected request. Normalized packages are not cached.
 
 ### Uploaded Release Assets
 
-When `github_asset` is supplied, the current direct-download design is preserved:
+When `github_asset` is supplied, Secure File Access requests the exact uploaded ZIP asset through the authenticated GitHub API.
 
-1. Secure File Access requests the exact uploaded ZIP asset through the authenticated GitHub API
-2. GitHub must return a valid temporary HTTPS redirect
-3. WordPress redirects the authorized user's browser to that GitHub URL
-4. GitHub transfers the uploaded asset directly to the user
+When GitHub returns a temporary HTTPS redirect:
 
-WordPress does not download, rename, extract, rebuild, or stream explicitly uploaded assets. Their filename and internal folder structure remain controlled by the publisher.
+1. Secure File Access validates the redirect URL
+2. WordPress redirects the authorized user's browser to that URL
+3. GitHub transfers the uploaded asset directly to the user
+
+When GitHub returns `200 OK` with the ZIP body:
+
+1. Secure File Access creates a unique private temporary workspace with `0700` permissions
+2. WordPress streams the asset unchanged into a temporary file inside that workspace
+3. WordPress streams the file to the authorized user using the uploaded asset filename
+4. the temporary file and workspace are removed
+
+Uploaded assets are not extracted, inspected internally, renamed, or rebuilt. Their contents and original filename remain controlled by the publisher.
 
 ### GitHub Response Handling
 
 The release metadata request must return `200 OK` because the plugin needs the release information from its JSON response.
 
-The generated-archive and uploaded-asset API requests must return `301`, `302`, `303`, `307`, or `308` with a valid `Location` header. A direct `200 OK` response from either API endpoint is rejected because it would contain the ZIP body instead of the temporary URL expected by that stage.
+The generated-archive API request must return `301`, `302`, `303`, `307`, or `308` with a valid `Location` header. A direct `200 OK` archive response is rejected because generated archives require the validated temporary-URL normalization flow.
 
-For generated archives only, WordPress then streams the validated temporary URL into the private workspace. That later file request must return `200 OK` with a non-empty ZIP file so the archive can be normalized locally.
+The uploaded-asset API request accepts either a valid temporary redirect or `200 OK`. Redirects preserve the direct GitHub transfer. A direct `200 OK` asset response is streamed unchanged through the private WordPress workspace.
+
+For generated archives, WordPress streams the validated temporary URL into the private workspace. That file request must return `200 OK` with a non-empty ZIP file so the archive can be normalized locally.
 
 Common API responses are handled as follows:
 
@@ -145,9 +155,10 @@ Common API responses are handled as follows:
 | --- | --- | --- |
 | `200 OK` from release metadata | Accepted | The JSON release record is required. |
 | `301`, `302`, `303`, `307`, or `308` from an archive or asset API request | Accepted | The `Location` URL can be validated and used for the next download step. |
-| `200 OK` from an archive or asset API request | Rejected | That stage requires a temporary URL rather than a directly streamed ZIP body. |
+| `200 OK` from an uploaded-asset API request | Accepted | The unchanged ZIP body is streamed through the private workspace. |
+| `200 OK` from a generated-archive API request | Rejected | Generated archives require a temporary URL before normalization. |
 | `204 No Content` | Rejected | No ZIP body or temporary download URL is available. |
-| `206 Partial Content` | Rejected | The API request did not provide the required complete temporary-download flow. |
+| `206 Partial Content` | Rejected | The API request did not provide the required complete download flow. |
 | `304 Not Modified` | Rejected | The plugin does not use cached GitHub API download responses. |
 | `400 Bad Request` or `422 Unprocessable Content` | Rejected | GitHub did not accept the archive or asset request. |
 | `401 Unauthorized` | Rejected | The configured GitHub token was rejected. |
@@ -155,11 +166,11 @@ Common API responses are handled as follows:
 | `404 Not Found` | Rejected | The repository, release, archive, or asset is missing or inaccessible. |
 | `429 Too Many Requests` | Rejected | GitHub's API rate limit was reached. |
 | `500`–`599` | Rejected | GitHub reported a temporary server failure. |
-| Any other response | Rejected | The response does not match the required metadata or temporary-download flow. |
+| Any other response | Rejected | The response does not match the required metadata or download flow. |
 
 Every temporary redirect must use HTTPS, include a valid host, contain no embedded username or password, and pass WordPress URL safety validation.
 
-The GitHub personal access token is never added to the protected link or temporary redirect URL. Uploaded assets expose GitHub's temporary URL to the authorized browser. Generated archives are fetched and normalized by WordPress, so the user receives the local `repository.zip` response instead.
+The GitHub personal access token is never added to the protected link or temporary redirect URL. Redirected assets expose GitHub's temporary URL to the authorized browser. Direct `200 OK` assets and generated archives are transferred from WordPress, so the user receives a local ZIP response.
 
 GitHub release metadata is resolved when the protected link is opened. Secure File Access does not cache release, archive, or asset metadata.
 
@@ -174,7 +185,7 @@ Secure File Access distinguishes:
 - access denied by GitHub
 - a missing or inaccessible repository, release, archive, or asset
 - a temporary GitHub server failure
-- an archive download, validation, extraction, rename, rebuild, or streaming failure
+- an archive or asset download, validation, extraction, rename, rebuild, or streaming failure
 
 The plugin does not automatically retry failed GitHub requests. Reloading the WordPress page creates a new protected link when the user still has access.
 
@@ -192,16 +203,16 @@ A generated source archive reflects the repository contents at the release tag. 
 
 ## Temporary Files and Cleanup
 
-Generated archive processing requires a writable WordPress temporary directory and enough disk space for the downloaded ZIP, extracted files, and rebuilt ZIP.
+Generated archive processing requires a writable WordPress temporary directory and enough disk space for the downloaded ZIP, extracted files, and rebuilt ZIP. A direct `200 OK` uploaded asset requires temporary space for one unchanged ZIP file.
 
-The source ZIP is created inside the request's private `0700` workspace before GitHub content is written. The workspace path is unique per request and registered for shutdown cleanup. The plugin also removes it immediately after a completed stream when possible. Cleanup is attempted after failures and interrupted requests; no normalized archive cache is retained.
+Temporary ZIP files are created inside a request-specific private `0700` workspace before GitHub content is written. The workspace path is unique per request and registered for shutdown cleanup. The plugin also removes it immediately after a completed stream or redirect fallback when possible. Cleanup is attempted after failures and interrupted requests; no ZIP cache is retained.
 
 ## Privacy and Caching
 
 Protected download responses are marked private and non-cacheable.
 
-The plugin also sends a no-referrer policy before redirects and generated archive responses.
+The plugin also sends a no-referrer policy before redirects and local GitHub ZIP responses.
 
-Normal URL destinations and uploaded GitHub assets receive normal connection information directly from the visitor's browser. Generated GitHub archives are first fetched by the WordPress server, then transferred from WordPress to the authorized user.
+Normal URL destinations and redirected GitHub assets receive normal connection information directly from the visitor's browser. Direct `200 OK` assets and generated GitHub archives are first fetched by the WordPress server, then transferred from WordPress to the authorized user.
 
 See [Shortcode](shortcode.md) for usage examples and [Settings](settings.md) for access defaults, error messages, and GitHub token configuration.
