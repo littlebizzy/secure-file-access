@@ -304,6 +304,7 @@ function sfa_get_github_release_asset( $release, $asset_name ) {
 				'owner' => $release['owner'],
 				'repo' => $release['repo'],
 				'id' => absint( $release_asset['id'] ),
+				'name' => $release_asset['name'],
 			);
 		}
 	}
@@ -353,8 +354,8 @@ function sfa_get_github_redirect_url( $response, $fallback_code, $fallback_messa
 	return $redirect_url;
 }
 
-// resolve an uploaded github release asset to a temporary download url
-function sfa_get_github_release_asset_url( $release, $asset_name ) {
+// resolve an uploaded github release asset to a redirect or local file
+function sfa_get_github_release_asset_download( $release, $asset_name ) {
 	$release_asset = sfa_get_github_release_asset( $release, $asset_name );
 	if ( is_wp_error( $release_asset ) ) {
 		return $release_asset;
@@ -367,23 +368,116 @@ function sfa_get_github_release_asset_url( $release, $asset_name ) {
 	$token = trim( $token );
 
 	$api_url = 'https://api.github.com/repos/' . rawurlencode( $release_asset['owner'] ) . '/' . rawurlencode( $release_asset['repo'] ) . '/releases/assets/' . absint( $release_asset['id'] );
-	$response = wp_remote_get(
-		$api_url,
-		array(
-			'timeout' => 15,
-			'redirection' => 0,
-			'decompress' => false,
-			'limit_response_size' => 1,
-			'headers' => sfa_github_api_headers( $token, 'application/octet-stream' ),
-		)
+	$request_args = array(
+		'timeout' => 15,
+		'redirection' => 0,
+		'decompress' => false,
+		'limit_response_size' => 1,
+		'headers' => sfa_github_api_headers( $token, 'application/octet-stream' ),
 	);
+	$response = wp_remote_get( $api_url, $request_args );
 
-	return sfa_get_github_redirect_url(
-		$response,
-		'sfa_github_asset_unavailable',
-		__( 'The GitHub release asset could not be downloaded.', 'secure-file-access' ),
-		'sfa_github_asset_no_redirect',
-		__( 'GitHub did not provide a valid temporary download URL for this release asset.', 'secure-file-access' )
+	if ( is_wp_error( $response ) ) {
+		return sfa_github_api_error(
+			$response,
+			'sfa_github_asset_unavailable',
+			__( 'The GitHub release asset could not be downloaded.', 'secure-file-access' )
+		);
+	}
+
+	$response_code = wp_remote_retrieve_response_code( $response );
+	if ( in_array( $response_code, array( 301, 302, 303, 307, 308 ), true ) ) {
+		$url = sfa_get_github_redirect_url(
+			$response,
+			'sfa_github_asset_unavailable',
+			__( 'The GitHub release asset could not be downloaded.', 'secure-file-access' ),
+			'sfa_github_asset_no_redirect',
+			__( 'GitHub did not provide a valid temporary download URL for this release asset.', 'secure-file-access' )
+		);
+
+		if ( is_wp_error( $url ) ) {
+			return $url;
+		}
+
+		return array(
+			'type' => 'redirect',
+			'url' => $url,
+		);
+	}
+
+	if ( 200 !== $response_code ) {
+		return sfa_github_api_error(
+			$response,
+			'sfa_github_asset_unavailable',
+			__( 'The GitHub release asset could not be downloaded.', 'secure-file-access' )
+		);
+	}
+
+	$workspace = sfa_create_temporary_workspace();
+	if ( is_wp_error( $workspace ) ) {
+		return $workspace;
+	}
+
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	$asset_file = wp_tempnam( $release_asset['name'], trailingslashit( $workspace ) );
+	if ( ! is_string( $asset_file ) || '' === $asset_file ) {
+		return new WP_Error( 'sfa_github_asset_download', __( 'WordPress could not create a private temporary file for the GitHub release asset.', 'secure-file-access' ) );
+	}
+
+	if ( wp_normalize_path( $workspace ) !== wp_normalize_path( dirname( $asset_file ) ) ) {
+		wp_delete_file( $asset_file );
+		return new WP_Error( 'sfa_github_asset_download', __( 'WordPress could not create a private temporary file for the GitHub release asset.', 'secure-file-access' ) );
+	}
+
+	$request_args = array(
+		'timeout' => 300,
+		'redirection' => 0,
+		'decompress' => false,
+		'stream' => true,
+		'filename' => $asset_file,
+		'headers' => sfa_github_api_headers( $token, 'application/octet-stream' ),
+	);
+	$response = wp_remote_get( $api_url, $request_args );
+
+	if ( is_wp_error( $response ) ) {
+		return sfa_github_api_error(
+			$response,
+			'sfa_github_asset_unavailable',
+			__( 'The GitHub release asset could not be downloaded.', 'secure-file-access' )
+		);
+	}
+
+	$response_code = wp_remote_retrieve_response_code( $response );
+	if ( in_array( $response_code, array( 301, 302, 303, 307, 308 ), true ) ) {
+		$url = sfa_get_github_redirect_url(
+			$response,
+			'sfa_github_asset_unavailable',
+			__( 'The GitHub release asset could not be downloaded.', 'secure-file-access' ),
+			'sfa_github_asset_no_redirect',
+			__( 'GitHub did not provide a valid temporary download URL for this release asset.', 'secure-file-access' )
+		);
+
+		if ( is_wp_error( $url ) ) {
+			return $url;
+		}
+
+		sfa_remove_temporary_path( $workspace );
+
+		return array(
+			'type' => 'redirect',
+			'url' => $url,
+		);
+	}
+
+	if ( 200 !== $response_code || ! is_file( $asset_file ) || 0 >= filesize( $asset_file ) ) {
+		return new WP_Error( 'sfa_github_asset_download', __( 'WordPress could not download the GitHub release asset.', 'secure-file-access' ) );
+	}
+
+	return array(
+		'type' => 'file',
+		'path' => $asset_file,
+		'filename' => $release_asset['name'],
+		'workspace' => $workspace,
 	);
 }
 
@@ -804,15 +898,7 @@ function sfa_get_github_release_download( $repository, $tag, $asset_name ) {
 	}
 
 	if ( '' !== $asset_name ) {
-		$url = sfa_get_github_release_asset_url( $release, $asset_name );
-		if ( is_wp_error( $url ) ) {
-			return $url;
-		}
-
-		return array(
-			'type' => 'redirect',
-			'url' => $url,
-		);
+		return sfa_get_github_release_asset_download( $release, $asset_name );
 	}
 
 	$archive = sfa_prepare_github_release_archive( $release );
@@ -846,35 +932,49 @@ function sfa_stop_protected_download( $message ) {
 	);
 }
 
-// stream one normalized github archive to the authorized user
-function sfa_send_github_release_archive( $archive ) {
+// stream one prepared github zip file to the authorized user
+function sfa_send_github_zip_file( $download ) {
 	if (
-		! is_array( $archive ) ||
-		empty( $archive['path'] ) ||
-		empty( $archive['filename'] ) ||
-		empty( $archive['workspace'] ) ||
-		! is_file( $archive['path'] )
+		! is_array( $download ) ||
+		empty( $download['path'] ) ||
+		empty( $download['filename'] ) ||
+		empty( $download['workspace'] ) ||
+		! is_file( $download['path'] )
 	) {
-		return new WP_Error( 'sfa_github_archive_send', __( 'The normalized GitHub ZIP archive is unavailable.', 'secure-file-access' ) );
+		return new WP_Error( 'sfa_github_file_send', __( 'The GitHub ZIP file is unavailable.', 'secure-file-access' ) );
 	}
 
-	$file_size = filesize( $archive['path'] );
+	$file_size = filesize( $download['path'] );
 	if ( false === $file_size || 0 >= $file_size ) {
-		return new WP_Error( 'sfa_github_archive_send', __( 'The normalized GitHub ZIP archive is unavailable.', 'secure-file-access' ) );
+		return new WP_Error( 'sfa_github_file_send', __( 'The GitHub ZIP file is unavailable.', 'secure-file-access' ) );
 	}
 
-	$handle = fopen( $archive['path'], 'rb' );
+	$handle = fopen( $download['path'], 'rb' );
 	if ( false === $handle ) {
-		return new WP_Error( 'sfa_github_archive_send', __( 'WordPress could not open the normalized GitHub ZIP archive.', 'secure-file-access' ) );
+		return new WP_Error( 'sfa_github_file_send', __( 'WordPress could not open the GitHub ZIP file.', 'secure-file-access' ) );
 	}
 
 	while ( ob_get_level() ) {
-		ob_end_clean();
+		$status = ob_get_status();
+		if ( ! is_array( $status ) || ! isset( $status['flags'] ) || ! ( $status['flags'] & PHP_OUTPUT_HANDLER_REMOVABLE ) ) {
+			break;
+		}
+
+		$level = ob_get_level();
+		if ( ! ob_end_clean() || ob_get_level() >= $level ) {
+			break;
+		}
+	}
+
+	$filename = wp_basename( $download['filename'] );
+	$fallback_filename = sanitize_file_name( $filename );
+	if ( '' === $fallback_filename ) {
+		$fallback_filename = 'download.zip';
 	}
 
 	sfa_send_protected_download_headers();
 	header( 'Content-Type: application/zip', true );
-	header( 'Content-Disposition: attachment; filename="' . $archive['filename'] . '"', true );
+	header( 'Content-Disposition: attachment; filename="' . $fallback_filename . '"; filename*=UTF-8\'\'' . rawurlencode( $filename ), true );
 	header( 'Content-Length: ' . $file_size, true );
 	header( 'X-Content-Type-Options: nosniff', true );
 
@@ -889,7 +989,7 @@ function sfa_send_github_release_archive( $archive ) {
 	}
 
 	fclose( $handle );
-	sfa_remove_temporary_path( $archive['workspace'] );
+	sfa_remove_temporary_path( $download['workspace'] );
 	exit;
 }
 
@@ -991,7 +1091,7 @@ function sfa_handle_protected_download() {
 	delete_transient( $transient_key );
 
 	if ( 'github' === $source && 'file' === $github_download['type'] ) {
-		$sent = sfa_send_github_release_archive( $github_download );
+		$sent = sfa_send_github_zip_file( $github_download );
 		if ( is_wp_error( $sent ) ) {
 			sfa_stop_protected_download( $sent->get_error_message() );
 		}
