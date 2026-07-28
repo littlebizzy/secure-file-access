@@ -690,19 +690,22 @@ function sfa_github_archive_has_symlink( $directory ) {
 	return false;
 }
 
-// create a normalized zip containing the repository directory
+// create a normalized zip containing repository contents at the archive root
 function sfa_create_normalized_github_zip( $repository_directory, $workspace, $output_path ) {
-	$repository_name = basename( $repository_directory );
+	$entries = scandir( $repository_directory );
+	if ( ! is_array( $entries ) ) {
+		return new WP_Error( 'sfa_github_archive_create', __( 'WordPress could not inspect the temporary repository directory.', 'secure-file-access' ) );
+	}
+	$entries = array_values( array_diff( $entries, array( '.', '..' ) ) );
+
+	if ( empty( $entries ) ) {
+		return new WP_Error( 'sfa_github_archive_empty', __( 'GitHub returned an empty ZIP archive.', 'secure-file-access' ) );
+	}
 
 	if ( class_exists( 'ZipArchive' ) ) {
 		$archive = new ZipArchive();
 		$opened = $archive->open( $output_path, ZipArchive::CREATE | ZipArchive::OVERWRITE );
 		if ( true !== $opened ) {
-			return new WP_Error( 'sfa_github_archive_create', __( 'WordPress could not create the normalized GitHub ZIP archive.', 'secure-file-access' ) );
-		}
-
-		if ( ! $archive->addEmptyDir( $repository_name ) ) {
-			$archive->close();
 			return new WP_Error( 'sfa_github_archive_create', __( 'WordPress could not create the normalized GitHub ZIP archive.', 'secure-file-access' ) );
 		}
 
@@ -718,7 +721,7 @@ function sfa_create_normalized_github_zip( $repository_directory, $workspace, $o
 			}
 
 			$relative_path = substr( $item->getPathname(), strlen( $repository_directory ) + 1 );
-			$archive_path = $repository_name . '/' . str_replace( DIRECTORY_SEPARATOR, '/', $relative_path );
+			$archive_path = str_replace( DIRECTORY_SEPARATOR, '/', $relative_path );
 
 			if ( $item->isDir() ) {
 				$added = $archive->addEmptyDir( $archive_path );
@@ -737,11 +740,17 @@ function sfa_create_normalized_github_zip( $repository_directory, $workspace, $o
 		}
 	} else {
 		require_once ABSPATH . 'wp-admin/includes/class-pclzip.php';
+		$file_list = array();
+
+		foreach ( $entries as $entry ) {
+			$file_list[] = $repository_directory . DIRECTORY_SEPARATOR . $entry;
+		}
+
 		$archive = new PclZip( $output_path );
 		$created = $archive->create(
-			$repository_directory,
+			$file_list,
 			PCLZIP_OPT_REMOVE_PATH,
-			$workspace
+			$repository_directory
 		);
 
 		if ( ! is_array( $created ) || empty( $created ) ) {
