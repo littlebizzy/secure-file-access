@@ -59,7 +59,7 @@ Override the configured access defaults and GitHub release selection:
 ### 1.6.1
 - fixes private source ZIP creation by passing a trailing-slash workspace path to `wp_tempnam()`, preventing valid generated archives from failing the workspace containment check
 - accepts direct `200 OK` GitHub release asset responses by streaming the unchanged ZIP through the private workspace while preserving temporary redirect handling
-- refuses ZIP streaming when an active output buffer cannot be removed, preventing a possible loop or buffered file response
+- refuses ZIP streaming when response headers were already sent or an active output buffer cannot be removed, preventing corrupted or buffered file responses
 
 ### 1.6.0
 - rebuilds generated GitHub release archives with the repository name as the ZIP filename and internal root folder
