@@ -105,7 +105,7 @@ When `github_asset` is omitted, Secure File Access:
 6. rejects unsafe paths and symbolic links
 7. extracts the archive into the workspace's separate `source` directory
 8. moves and renames the generated root under `package/repository-name`
-9. rebuilds the ZIP with the repository name as both the filename and root directory
+9. rebuilds the ZIP with the repository name as the filename and the repository contents directly at the archive root
 10. streams the rebuilt ZIP to the authorized user
 11. removes the source ZIP, extracted files, rebuilt ZIP, and workspace
 
@@ -113,10 +113,11 @@ For `littlebizzy/force-https`, the result is:
 
 ```text
 force-https.zip
-└── force-https/
+├── force-https.php
+└── ...
 ```
 
-The rebuilt archive is streamed from disk rather than assembled as one complete in-memory response. WordPress uses `ZipArchive` when available and its bundled PclZip library otherwise.
+The rebuilt archive keeps the repository name as the ZIP filename but does not add another repository-named wrapper directory. It is streamed from disk rather than assembled as one complete in-memory response. WordPress uses `ZipArchive` when available and its bundled PclZip library otherwise.
 
 Generated archives are rebuilt for each successful protected request. Normalized packages are not cached.
 
@@ -205,7 +206,7 @@ When `github_asset` is omitted, the plugin normalizes GitHub's generated ZIP arc
 
 When `github_asset` is supplied, its filename must exactly match an uploaded ZIP asset in the selected release. The plugin does not fall back to the generated archive when the named asset is missing.
 
-A generated source archive reflects the repository contents at the release tag. Secure File Access changes only the outer ZIP filename and top-level directory name; it does not otherwise modify the repository files.
+A generated source archive reflects the repository contents at the release tag. Secure File Access removes GitHub's generated outer directory, keeps the repository name as the ZIP filename, and preserves the files and relative paths beneath that directory.
 
 ## Temporary Files and Cleanup
 

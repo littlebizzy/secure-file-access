@@ -16,13 +16,14 @@ Secure File Access uses the `[file_access]` shortcode to display a protected dow
 
 When `github_tag` is omitted, the plugin uses the repository's latest published stable GitHub Release. Drafts, prereleases, and Git tags without an associated GitHub Release are not used.
 
-When `github_asset` is omitted, the plugin downloads GitHub's generated ZIP archive, rebuilds it with the repository name as the ZIP filename and internal root folder, and streams it through WordPress.
+When `github_asset` is omitted, the plugin downloads GitHub's generated ZIP archive, rebuilds it with the repository name as the ZIP filename and the repository contents directly at the ZIP root, and streams it through WordPress.
 
 For `littlebizzy/private-plugin`, the generated result is:
 
 ```text
 private-plugin.zip
-└── private-plugin/
+├── private-plugin.php
+└── ...
 ```
 
 When `github_asset` is supplied, the exact uploaded ZIP asset redirects directly when GitHub supplies a temporary URL or streams unchanged through WordPress when GitHub returns `200 OK`. It is not renamed or rebuilt.
@@ -34,7 +35,7 @@ The visitor must be logged in and have access through an allowed WordPress role,
 | Attribute | Required | Description |
 | --- | --- | --- |
 | `url` | One source required | HTTP or HTTPS destination for a normal protected download. |
-| `github_repo` | One source required | GitHub repository in `owner/repository` format. The repository portion becomes the generated archive filename and root folder. |
+| `github_repo` | One source required | GitHub repository in `owner/repository` format. The repository portion becomes the generated archive filename. |
 | `github_tag` | No | Exact published stable release tag. Uses the latest stable release when omitted. |
 | `github_asset` | No | Exact uploaded ZIP release asset filename. Omitting it selects and normalizes the selected release tag's generated ZIP archive. |
 | `label` | No | Download link text. Uses the configured default label when omitted. |
@@ -52,7 +53,7 @@ Exactly one source is required. Use either `url` or `github_repo`, not both. A m
 [file_access github_repo="littlebizzy/private-plugin"]
 ```
 
-This selects the latest published stable release, normalizes its generated archive, and downloads `private-plugin.zip` containing the root folder `private-plugin/`.
+This selects the latest published stable release, normalizes its generated archive, and downloads `private-plugin.zip` with the repository files and directories directly at the ZIP root.
 
 ### Exact Release Archive
 
@@ -60,7 +61,7 @@ This selects the latest published stable release, normalizes its generated archi
 [file_access github_repo="littlebizzy/private-plugin" github_tag="v2.0.0"]
 ```
 
-The exact published stable release must exist. A missing tag does not fall back to the latest release. Its generated archive is normalized to `private-plugin.zip` containing `private-plugin/`.
+The exact published stable release must exist. A missing tag does not fall back to the latest release. Its generated archive is normalized to `private-plugin.zip` with the repository contents directly at the ZIP root.
 
 ### Exact Uploaded Asset
 

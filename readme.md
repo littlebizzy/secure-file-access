@@ -14,13 +14,14 @@ WooCommerce and WooCommerce Subscriptions are optional. Product purchase checks 
 
 Authorized downloads use a short-lived local `?download=` link instead of placing the destination URL or GitHub token in the page HTML. Each link is tied to the current user, expires after 15 minutes, rechecks access when requested, and becomes invalid after a successful redirect or local GitHub ZIP preparation. Protected download responses are marked private and non-cacheable and do not forward referrer information.
 
-The **GitHub Access** tab stores one personal access token per WordPress site. GitHub shortcodes use the latest published stable release by default and can optionally require an exact release tag or uploaded ZIP asset. Generated archives are temporarily downloaded, rebuilt with the repository name as the ZIP filename and root folder, and streamed through WordPress. Explicitly named uploaded assets redirect directly when GitHub supplies a temporary URL or stream unchanged through WordPress when GitHub returns `200 OK`.
+The **GitHub Access** tab stores one personal access token per WordPress site. GitHub shortcodes use the latest published stable release by default and can optionally require an exact release tag or uploaded ZIP asset. Generated archives are temporarily downloaded, rebuilt with the repository name as the ZIP filename and the repository contents directly at the ZIP root, and streamed through WordPress. Explicitly named uploaded assets redirect directly when GitHub supplies a temporary URL or stream unchanged through WordPress when GitHub returns `200 OK`.
 
 For example, `github_repo="littlebizzy/private-plugin"` without `github_asset` produces:
 
 ```text
 private-plugin.zip
-└── private-plugin/
+├── private-plugin.php
+└── ...
 ```
 
 Normal URL usage:
@@ -55,6 +56,10 @@ Override the configured access defaults and GitHub release selection:
 - [Troubleshooting](docs/troubleshooting.md)
 
 ## Changelog
+
+### 1.6.2
+- flattens normalized generated archives so repository files and directories sit directly at the ZIP root while the filename remains `repository.zip`, avoiding duplicate folders after extraction
+- applies the same flat package layout through both `ZipArchive` and WordPress's bundled PclZip fallback
 
 ### 1.6.1
 - fixes private source ZIP creation by passing a trailing-slash workspace path to `wp_tempnam()`, preventing valid generated archives from failing the workspace containment check

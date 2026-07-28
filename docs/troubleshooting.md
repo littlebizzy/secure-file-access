@@ -123,11 +123,12 @@ A specified `github_tag` that does not match a published stable release does not
 
 When `github_asset` is omitted, Secure File Access downloads and rebuilds GitHub's generated ZIP archive for the selected release tag. No uploaded release asset is required.
 
-The resulting filename and internal root folder use the repository name. For example:
+The resulting ZIP uses the repository name as its filename and places the repository contents directly at the archive root. For example:
 
 ```text
 private-plugin.zip
-└── private-plugin/
+├── private-plugin.php
+└── ...
 ```
 
 When `github_asset` is supplied, the filename must exactly match an uploaded `.zip` asset in the selected release.
@@ -140,7 +141,7 @@ The named asset receives priority and must exist. It redirects directly when Git
 
 ## Generated Archive Cannot Be Prepared
 
-Generated archive processing requires WordPress to download, inspect, extract, rename, rebuild, and stream a temporary ZIP package.
+Generated archive processing requires WordPress to download, inspect, extract, stage, rebuild, and stream a temporary ZIP package.
 
 Confirm that:
 
@@ -159,7 +160,7 @@ Secure File Access requires exactly one root directory in the generated archive.
 - absolute paths, parent-directory traversal, Windows drive paths, or backslash paths
 - symbolic links
 
-The plugin changes only the ZIP filename and top-level directory name. It does not modify files inside the repository tree.
+The plugin removes GitHub's generated outer directory and keeps the repository name as the ZIP filename. It does not modify the files or relative paths inside the repository tree.
 
 ## Uploaded Asset Cannot Be Streamed
 
@@ -187,13 +188,13 @@ Check for:
 
 The plugin closes the temporary file and removes its private workspace when this guard is triggered. Fix the early output or buffering source, reload the page, and use a newly generated protected link.
 
-## Downloaded ZIP Has the Wrong Name
+## Downloaded ZIP Has the Wrong Layout
 
-Generated archives should download as `repository.zip` and contain `repository/`.
+Generated archives should download as `repository.zip` with repository files and directories directly at the ZIP root.
 
-If the old GitHub-generated name such as `owner-repository-tag-hash.zip` still appears:
+If the old GitHub-generated name such as `owner-repository-tag-hash.zip` appears, or the ZIP still contains another repository-named wrapper folder:
 
-- confirm that Secure File Access 1.6.0 or later is active
+- confirm that Secure File Access 1.6.2 or later is active
 - confirm that `github_asset` is omitted
 - reload the page to create a new protected link
 - clear any full-page or object cache that preserved an older shortcode response
