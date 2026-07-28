@@ -139,6 +139,12 @@ When GitHub returns `200 OK` with the ZIP body:
 
 Uploaded assets are not extracted, inspected internally, renamed, or rebuilt. Their contents and original filename remain controlled by the publisher.
 
+### Local ZIP Streaming
+
+Generated archives and direct `200 OK` uploaded assets use the same local ZIP sender. Before sending the response, Secure File Access removes removable output buffers and requires that no active output buffer or previously sent response headers remain.
+
+If those conditions cannot be met, the plugin closes the file, removes the temporary workspace, and stops with an error instead of sending a corrupted or fully buffered ZIP response.
+
 ### GitHub Response Handling
 
 The release metadata request must return `200 OK` because the plugin needs the release information from its JSON response.
