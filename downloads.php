@@ -937,6 +937,12 @@ function sfa_send_github_zip_file( $download ) {
 		return new WP_Error( 'sfa_github_file_buffer', __( 'WordPress could not clear an active output buffer for the GitHub ZIP file.', 'secure-file-access' ) );
 	}
 
+	if ( headers_sent() ) {
+		fclose( $handle );
+		sfa_remove_temporary_path( $download['workspace'] );
+		return new WP_Error( 'sfa_github_file_headers', __( 'WordPress could not send headers for the GitHub ZIP file.', 'secure-file-access' ) );
+	}
+
 	$filename = wp_basename( $download['filename'] );
 	$fallback_filename = sanitize_file_name( $filename );
 	if ( '' === $fallback_filename ) {
