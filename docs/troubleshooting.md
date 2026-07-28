@@ -174,6 +174,19 @@ Confirm that:
 
 This temporary-file path is used only when GitHub returns the ZIP body directly. Temporary redirects continue to transfer the asset from GitHub to the authorized browser.
 
+## Local ZIP Response Cannot Be Sent
+
+Generated archives and direct `200 OK` uploaded assets use the same local ZIP sender. Secure File Access refuses the response rather than risking a corrupted or fully buffered ZIP when response headers were already sent or an active output buffer cannot be removed.
+
+Check for:
+
+- PHP warnings, notices, or whitespace output before the download response
+- a UTF-8 byte-order mark or other output in a plugin or theme PHP file
+- a plugin, theme, host rule, or proxy that sends response headers early
+- a non-removable output buffer created by another plugin or the hosting stack
+
+The plugin closes the temporary file and removes its private workspace when this guard is triggered. Fix the early output or buffering source, reload the page, and use a newly generated protected link.
+
 ## Downloaded ZIP Has the Wrong Name
 
 Generated archives should download as `repository.zip` and contain `repository/`.
